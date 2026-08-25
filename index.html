@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Multiplication Table Trainer</title>
+<style>
+:root{
+  color-scheme: light dark;
+  --bg:#f7f4ec; --fg:#1f2420; --panel:#ffffff; --border:#dedbd1; --muted:#6c726d;
+  --accent:#456d4c; --accent2:#5f8d65; --choice:#ece8de; --group:#f0ede5;
+  --correct:#dcebd9; --correct-fg:#204827; --wrong:#f3deda; --wrong-fg:#6b2621;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#171817; --fg:#f2f1ea; --panel:#222421; --border:#383b37; --muted:#a7ada8;
+    --choice:#30332f; --group:#30332f;
+  }
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:var(--bg); color:var(--fg);
+}
+button,select,input{font:inherit}
+.app{max-width:960px;margin:0 auto;padding:clamp(16px,4vw,40px)}
+.top{display:flex;gap:14px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;margin-bottom:18px}
+.brand{font-size:clamp(26px,6vw,38px);font-weight:900;letter-spacing:-.04em}
+.sub{font-size:15px;color:var(--muted);margin-top:4px}
+.stats{display:flex;gap:8px;flex-wrap:wrap}
+.pill{background:var(--panel);border:1px solid var(--border);padding:9px 13px;border-radius:999px;font-weight:800}
+.setup{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+.setup-box{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:13px 15px}
+.setup-box label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.07em;font-weight:850;color:var(--muted);margin-bottom:7px}
+.setup-box select{width:100%;min-height:48px;font-size:18px;font-weight:850;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--fg);padding:0 12px}
+.range-note{font-size:13px;color:var(--muted);margin-top:6px}
+.progress{height:10px;background:var(--choice);border-radius:99px;overflow:hidden;margin-bottom:22px}
+.bar{height:100%;width:0;background:var(--accent2);border-radius:99px;transition:width .3s}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:28px;padding:clamp(22px,5vw,42px);text-align:center}
+.mode{font-weight:850;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.question{font-size:clamp(52px,14vw,90px);font-weight:950;letter-spacing:-.06em;line-height:1;margin:16px 0 25px}
+.visual{display:flex;justify-content:center;gap:8px;min-height:55px;margin:-4px 0 22px;flex-wrap:wrap}
+.group{display:flex;gap:3px;padding:6px;border-radius:11px;background:var(--group);flex-wrap:wrap;max-width:80px;justify-content:center}
+.dot{width:12px;height:12px;border-radius:50%;background:#7d956c}
+.answer-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:620px;margin:0 auto}
+.answer{min-height:74px;border:2px solid transparent;border-radius:19px;background:var(--choice);color:var(--fg);font-size:clamp(26px,7vw,38px);font-weight:900;cursor:pointer}
+.answer.correct{background:var(--correct);color:var(--correct-fg);border-color:#6b9e70}
+.answer.wrong{background:var(--wrong);color:var(--wrong-fg);border-color:#bd756c}
+.type-wrap{max-width:420px;margin:0 auto;display:none;gap:11px;flex-direction:column}
+.type-input{width:100%;min-height:78px;border-radius:19px;border:2px solid var(--border);background:var(--bg);color:var(--fg);text-align:center;font-size:44px;font-weight:900;padding:8px}
+.submit{min-height:58px;border:0;border-radius:15px;background:var(--accent);color:#fff;font-size:20px;font-weight:850;cursor:pointer}
+.feedback{min-height:62px;display:flex;align-items:center;justify-content:center;font-size:clamp(18px,4vw,23px);font-weight:800;padding-top:14px}
+.explain{font-size:16px;font-weight:650;color:var(--muted);margin-top:-8px}
+.controls{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:17px}
+.small{min-height:48px;padding:10px 16px;border-radius:14px;border:1px solid var(--border);background:transparent;color:var(--fg);font-weight:800;cursor:pointer}
+.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.mastery{margin-top:24px}
+.mastery-title{font-weight:900;margin-bottom:10px}
+.facts{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;max-width:650px;margin:0 auto}
+.fact{min-height:48px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:850;background:var(--choice);border:1px solid var(--border)}
+.fact.learning{background:#efe5bd;color:#574811}
+.fact.known{background:#d9ead8;color:#254a29}
+.finish{display:none;text-align:center;padding:25px}
+.finish h2{font-size:42px;margin:0 0 10px}
+.finish p{font-size:18px;line-height:1.5;color:var(--muted)}
+.small:focus-visible,.answer:focus-visible,.type-input:focus-visible,select:focus-visible{outline:4px solid #8fae84;outline-offset:3px}
+@media(max-width:520px){.setup{grid-template-columns:1fr}.facts{grid-template-columns:repeat(3,minmax(0,1fr))}.card{border-radius:22px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div>
+      <div class="brand" id="brand">Master the ×3s</div>
+      <div class="sub">See it → choose it → type it → remember it.</div>
+    </div>
+    <div class="stats">
+      <div class="pill">🔥 <span id="streak">0</span></div>
+      <div class="pill">⭐ <span id="score">0</span></div>
+    </div>
+  </div>
+
+  <div class="setup">
+    <div class="setup-box">
+      <label for="table">Number to practice</label>
+      <select id="table">
+        <option value="1">×1</option>
+        <option value="2">×2</option>
+        <option value="3" selected>×3</option>
+        <option value="4">×4</option>
+        <option value="5">×5</option>
+        <option value="6">×6</option>
+        <option value="7">×7</option>
+        <option value="8">×8</option>
+        <option value="9">×9</option>
+        <option value="10">×10</option>
+        <option value="11">×11</option>
+        <option value="12">×12</option>
+      </select>
+    </div>
+    <div class="setup-box">
+      <label for="range">Fact range</label>
+      <select id="range">
+        <option value="5">Learning · through ×5</option>
+        <option value="10">Growing · through ×10</option>
+        <option value="12">Mastery · through ×12</option>
+      </select>
+      <div class="range-note" id="range-note">Questions from 3×0 through 3×5</div>
+    </div>
+  </div>
+
+  <div id="js-warning" style="margin:0 0 16px;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:var(--panel);font-weight:700">
+    If this message stays visible, your current file preview is not running JavaScript. Open this file in Safari or another full browser.
+  </div>
+  <div class="progress"><div class="bar" id="bar"></div></div>
+
+  <section class="card" id="play">
+    <div class="mode" id="mode"></div>
+    <div class="question" id="question"></div>
+    <div class="visual" id="visual"></div>
+    <div class="answer-grid" id="answers"></div>
+    <form class="type-wrap" id="type-form">
+      <input class="type-input" id="type-input" type="number" inputmode="numeric" min="0" max="144" autocomplete="off" aria-label="Type your answer">
+      <button class="submit" type="submit">Check answer</button>
+    </form>
+    <div class="feedback" id="feedback" aria-live="polite"></div>
+    <div class="explain" id="explain"></div>
+    <div class="controls">
+      <button type="button" class="small" id="hint">Show a hint</button>
+      <button type="button" class="small" id="restart">Start over</button>
+    </div>
+  </section>
+
+  <section class="finish" id="finish">
+    <h2>Nice work! 🎉</h2>
+    <p id="finish-text"></p>
+    <button type="button" class="small primary" id="again">Practice again</button>
+  </section>
+
+  <section class="mastery">
+    <div class="mastery-title" id="mastery-title"></div>
+    <div class="facts" id="facts"></div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const jsWarning = $('js-warning');
+  if (jsWarning) jsWarning.style.display = 'none';
+  const e = {
+    table:$('table'), range:$('range'), rangeNote:$('range-note'), brand:$('brand'),
+    streak:$('streak'), score:$('score'), bar:$('bar'), play:$('play'), finish:$('finish'),
+    finishText:$('finish-text'), mode:$('mode'), q:$('question'), visual:$('visual'),
+    answers:$('answers'), form:$('type-form'), input:$('type-input'), feedback:$('feedback'),
+    explain:$('explain'), facts:$('facts'), masteryTitle:$('mastery-title'),
+    hint:$('hint'), restart:$('restart'), again:$('again')
+  };
+
+  let table = 3, maxFact = 5, s;
+  const rounds = 20;
+
+  function fresh() {
+    return {
+      round:0, score:0, streak:0, current:0, locked:false,
+      mastery:Array(13).fill(0), misses:Array(13).fill(0), recent:[], type:'choice'
+    };
+  }
+
+  function labels() {
+    e.brand.textContent = 'Master the ×' + table + 's';
+    e.masteryTitle.textContent = '×' + table + ' Fact Power · 0–' + maxFact;
+    e.rangeNote.textContent = 'Questions from ' + table + '×0 through ' + table + '×' + maxFact;
+  }
+
+  function init() {
+    s = fresh();
+    labels();
+    e.play.style.display = 'block';
+    e.finish.style.display = 'none';
+    stats();
+    facts();
+    next();
+  }
+
+  function pick() {
+    const pool = [];
+    for (let n = 0; n <= maxFact; n++) {
+      let w = 3 + s.misses[n] * 4 - Math.min(2, s.mastery[n]);
+      if (s.recent.slice(-2).includes(n)) w = 1;
+      for (let k = 0; k < Math.max(1, w); k++) pool.push(n);
+    }
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  function shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function options(n) {
+    const c = n * table;
+    const v = new Set([c]);
+    const cand = [
+      c + table, c - table, c + 2 * table, c - 2 * table,
+      c + 1, c - 1, n * (table + 1), Math.max(0, n * (table - 1))
+    ].filter(x => x >= 0 && x <= 144 && x !== c);
+
+    shuffle(cand);
+    for (const x of cand) if (v.size < 4) v.add(x);
+    while (v.size < 4) v.add(Math.floor(Math.random() * Math.max(20, table * maxFact + 10)));
+    return shuffle([...v]);
+  }
+
+  function next() {
+    if (s.round >= rounds) {
+      done();
+      return;
+    }
+    s.locked = false;
+    s.current = pick();
+    s.recent.push(s.current);
+    s.round++;
+
+    const r = s.round;
+    s.type = (r <= 5 || r % 3 === 0) ? 'choice' : 'type';
+    e.bar.style.width = ((r - 1) / rounds * 100) + '%';
+    e.q.textContent = table + ' × ' + s.current;
+
+    const stage = r <= 5 ? 'Build the pattern' : r <= 12 ? 'Practice the fact' : 'Fast recall';
+    e.mode.textContent = stage + ' · ' + (s.type === 'type' ? 'TYPE IT' : 'CHOOSE IT');
+    e.feedback.textContent = s.type === 'type'
+      ? 'Type the answer.'
+      : r <= 5 ? 'Look at the groups, then choose.' : 'Choose the answer.';
+    e.explain.textContent = '';
+
+    visual(stage !== 'Fast recall');
+    questionUI();
+  }
+
+  function visual(show) {
+    e.visual.innerHTML = '';
+    e.visual.style.display = show ? 'flex' : 'none';
+    if (!show) return;
+
+    for (let g = 0; g < s.current; g++) {
+      const group = document.createElement('div');
+      group.className = 'group';
+      for (let d = 0; d < table; d++) {
+        const dot = document.createElement('span');
+        dot.className = 'dot';
+        group.appendChild(dot);
+      }
+      e.visual.appendChild(group);
+    }
+  }
+
+  function questionUI() {
+    e.answers.innerHTML = '';
+    if (s.type === 'type') {
+      e.answers.style.display = 'none';
+      e.form.style.display = 'flex';
+      e.input.value = '';
+      setTimeout(() => e.input.focus(), 0);
+    } else {
+      e.form.style.display = 'none';
+      e.answers.style.display = 'grid';
+      for (const v of options(s.current)) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'answer';
+        b.textContent = v;
+        b.addEventListener('click', () => answer(v, b));
+        e.answers.appendChild(b);
+      }
+    }
+  }
+
+  function answer(v, b) {
+    if (s.locked) return;
+    v = Number(v);
+    if (!Number.isFinite(v)) return;
+
+    s.locked = true;
+    const c = s.current * table;
+
+    if (v === c) {
+      if (b) b.classList.add('correct');
+      s.streak++;
+      s.score += (s.type === 'type' ? 15 : 10) + Math.min(10, s.streak);
+      s.mastery[s.current] = Math.min(3, s.mastery[s.current] + 1);
+      e.feedback.textContent = s.streak >= 5 ? '🔥 ' + s.streak + ' in a row!' : 'Yes! ' + c + ' is right!';
+      e.explain.textContent = table + ' × ' + s.current + ' = ' + c;
+      setTimeout(next, 850);
+    } else {
+      if (b) b.classList.add('wrong');
+      s.streak = 0;
+      s.misses[s.current]++;
+      s.mastery[s.current] = Math.max(0, s.mastery[s.current] - 1);
+
+      if (s.type === 'choice') {
+        for (const x of e.answers.querySelectorAll('button')) {
+          if (Number(x.textContent) === c) x.classList.add('correct');
+        }
+      }
+
+      e.feedback.textContent = 'Almost — the answer is ' + c + '.';
+      e.explain.textContent = s.current + ' groups of ' + table + ' = ' + c + '. You’ll see this one again.';
+      setTimeout(next, 1500);
+    }
+
+    stats();
+    facts();
+  }
+
+  function stats() {
+    e.streak.textContent = s.streak;
+    e.score.textContent = s.score;
+  }
+
+  function facts() {
+    e.facts.innerHTML = '';
+    for (let n = 0; n <= maxFact; n++) {
+      const d = document.createElement('div');
+      const m = s.mastery[n];
+      d.className = 'fact' + (m >= 3 ? ' known' : m > 0 ? ' learning' : '');
+      d.textContent = table + '×' + n;
+      e.facts.appendChild(d);
+    }
+  }
+
+  function hint() {
+    if (s.locked) return;
+    const n = s.current;
+
+    if (n === 0) {
+      e.feedback.textContent = 'Zero groups means zero.';
+      e.explain.textContent = table + ' × 0 = 0';
+      return;
+    }
+
+    const p = (n - 1) * table;
+    e.feedback.textContent = 'Think: ' + table + ' × ' + (n - 1) + ' = ' + p + ', then add ' + table + '.';
+    e.explain.textContent = p + ' + ' + table + ' = ?';
+    visual(true);
+  }
+
+  function done() {
+    e.bar.style.width = '100%';
+    e.play.style.display = 'none';
+    e.finish.style.display = 'block';
+    const known = s.mastery.slice(0, maxFact + 1).filter(x => x >= 3).length;
+    e.finishText.textContent = 'You scored ' + s.score + ' points and made ' + known + ' of ' + (maxFact + 1) + ' facts strong.';
+  }
+
+  e.form.addEventListener('submit', ev => {
+    ev.preventDefault();
+    if (s.locked) return;
+    const raw = e.input.value.trim();
+    if (raw === '') {
+      e.feedback.textContent = 'Type an answer first.';
+      return;
+    }
+    const v = Number(raw);
+    if (!Number.isFinite(v) || v < 0 || v > 144) {
+      e.feedback.textContent = 'Enter a number from 0 to 144.';
+      return;
+    }
+    answer(v, null);
+  });
+
+  e.table.addEventListener('change', () => {
+    table = Math.max(1, Math.min(12, Number(e.table.value) || 3));
+    init();
+  });
+
+  e.range.addEventListener('change', () => {
+    const chosen = Number(e.range.value);
+    maxFact = [5, 10, 12].includes(chosen) ? chosen : 5;
+    init();
+  });
+
+  e.hint.addEventListener('click', hint);
+  e.restart.addEventListener('click', init);
+  e.again.addEventListener('click', init);
+
+  init();
+})();
+</script>
+</body>
+</html>
