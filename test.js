@@ -33,9 +33,33 @@
     8:[[[.5,.49],[.29,.4],[.2,.24],[.3,.09],[.52,.08],[.72,.2],[.68,.38],[.5,.49],[.31,.57],[.21,.74],[.32,.92],[.56,.94],[.77,.8],[.7,.59],[.5,.49]]],
     9:[[[.76,.52],[.62,.12],[.4,.07],[.21,.22],[.21,.42],[.36,.55],[.6,.54],[.78,.4],[.76,.7],[.64,.9],[.42,.94],[.25,.84]]]
   };
-  function buildTemplates(){for(const d of Object.keys(P))templates.push({digit:Number(d),ink:raster(P[d])});const fonts=['Arial','Verdana','Georgia','Trebuchet MS','Comic Sans MS'];for(let digit=0;digit<=9;digit++)for(const font of fonts){const c=document.createElement('canvas');c.width=90;c.height=110;const ctx=c.getContext('2d');ctx.fillStyle='#000';ctx.font='88px '+font;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(digit),45,56);const im=ctx.getImageData(0,0,c.width,c.height).data,pts=[];for(let y=0;y<c.height;y+=2)for(let x=0;x<c.width;x+=2)if(im[(y*c.width+x)*4+3]>60)pts.push({x:x/c.width,y:y/c.height});if(pts.length){let minX=1,minY=1,maxX=0,maxY=0;pts.forEach(p=>{minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y)});const stroke=pts.map(p=>({x:(p.x-minX)/(maxX-minX||1)*.7+.15,y:(p.y-minY)/(maxY-minY||1)*.78+.11}));templates.push({digit,ink:stroke.map(p=>[Math.round(p.x*23),Math.round(p.y*23)])})}}}
+  function buildTemplates(){
+    for(const d of Object.keys(P))templates.push({digit:Number(d),ink:raster(P[d]),path:P[d]});
+    const fonts=['Arial','Verdana','Georgia','Trebuchet MS','Comic Sans MS'];
+    for(let digit=0;digit<=9;digit++)for(const font of fonts){const c=document.createElement('canvas');c.width=90;c.height=110;const ctx=c.getContext('2d');ctx.fillStyle='#000';ctx.font='88px '+font;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(digit),45,56);const im=ctx.getImageData(0,0,c.width,c.height).data,pts=[];for(let y=0;y<c.height;y+=2)for(let x=0;x<c.width;x+=2)if(im[(y*c.width+x)*4+3]>60)pts.push([Math.round(x/c.width*23),Math.round(y/c.height*23)]);if(pts.length)templates.push({digit,ink:pts,path:null})}
+  }
   function dist(a,b){if(!a.length||!b.length)return 999;let s=0;for(const p of a){let best=999;for(const q of b){const dx=p[0]-q[0],dy=p[1]-q[1],v=dx*dx+dy*dy;if(v<best)best=v}s+=best}for(const p of b){let best=999;for(const q of a){const dx=p[0]-q[0],dy=p[1]-q[1],v=dx*dx+dy*dy;if(v<best)best=v}s+=best}return s/(a.length+b.length)}
-  function recognize(strokes){if(!strokes.flat().length)return null;const ink=raster(strokes);let best={digit:null,score:Infinity};for(const t of templates){const sc=dist(ink,t.ink);if(sc<best.score)best={digit:t.digit,score:sc}}return best.digit}
+  function resamplePath(strokes,count=48){
+    const norm=normalizeStrokes(strokes),pts=[];
+    for(const st of norm)for(const p of st)pts.push(p);
+    if(!pts.length)return[];if(pts.length===1)return Array(count).fill(pts[0]);
+    const lens=[0];let total=0;for(let i=1;i<pts.length;i++){total+=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y);lens.push(total)}
+    if(total<.001)return Array(count).fill(pts[0]);
+    const out=[];for(let k=0;k<count;k++){const target=total*k/(count-1);let i=1;while(i<lens.length&&lens[i]<target)i++;if(i>=lens.length){out.push(pts[pts.length-1]);continue}const prev=lens[i-1],seg=Math.max(.0001,lens[i]-prev),f=(target-prev)/seg;out.push({x:pts[i-1].x+(pts[i].x-pts[i-1].x)*f,y:pts[i-1].y+(pts[i].y-pts[i-1].y)*f})}return out
+  }
+  function orderedDistance(a,b){const pa=resamplePath(a),pb=resamplePath(b);if(!pa.length||!pb.length)return 9;let direct=0,reverse=0;for(let i=0;i<pa.length;i++){direct+=Math.hypot(pa[i].x-pb[i].x,pa[i].y-pb[i].y);const j=pa.length-1-i;reverse+=Math.hypot(pa[i].x-pb[j].x,pa[i].y-pb[j].y)}return Math.min(direct,reverse)/pa.length}
+  function recognize(strokes){
+    if(!strokes.flat().length)return null;
+    const ink=raster(strokes),scores=Array(10).fill(Infinity);
+    for(const t of templates){
+      let sc=dist(ink,t.ink)/18;
+      if(t.path){sc+=orderedDistance(strokes,t.path)*7+Math.abs(strokes.length-t.path.length)*.12}
+      else sc+=.42;
+      if(sc<scores[t.digit])scores[t.digit]=sc;
+    }
+    let best=0;for(let d=1;d<=9;d++)if(scores[d]<scores[best])best=d;
+    return best;
+  }
   function readAnswer(){const digs=drawings.map(d=>recognize(d.strokes));let str='';for(const d of digs){if(d===null){if(str)break;continue}str+=d}return str===''?null:Number(str)}
   function updateRecognized(){const v=readAnswer();e.recognized.textContent='I read: '+(v===null?'—':v)}
   function showQuestion(){if(index>=TEST_COUNT){finish(false);return}e.question.textContent=questions[index].text;e.qcount.textContent='Question '+(index+1)+' of '+TEST_COUNT;e.progress.style.width=index/TEST_COUNT*100+'%';clearWriting()}
