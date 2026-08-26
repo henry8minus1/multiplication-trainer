@@ -13,75 +13,64 @@ GitHub Pages app
       v
 Cloudflare Worker
       |
-      +--> OpenAI API     OR
-      +--> Anthropic API  OR
-      +--> another provider
+      +--> Gemini API     OR
+      +--> OpenAI API
 ```
 
-The browser should know only the Worker URL. **Never put `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or any other provider key in this repository, `word-problems.js`, browser localStorage, or the Parent / AI settings field.**
+The browser should know only the Worker URL. **Never put `GEMINI_API_KEY`, `OPENAI_API_KEY`, or any provider key in this repository, `word-problems.js`, browser localStorage, or the Parent / AI settings field.**
 
 The frontend sends only an anonymous learning profile: grade, requested math skill, adaptive difficulty, and recent accuracy by skill. It does not send the student's name, school, location, handwriting, or full local history.
 
 ---
 
-# Option A — OpenAI
+# Recommended option — Gemini free tier
 
-The included `cloudflare-worker.js` is currently configured for OpenAI and uses the Responses API.
+The included `cloudflare-worker.js` now supports Gemini directly and defaults to Gemini when `AI_PROVIDER` is omitted.
 
-## 1. Create an OpenAI API account and key
+## 1. Create a Gemini API key
 
-1. Go to the OpenAI developer platform.
-2. Create or select a Project.
-3. Open the API keys page and create a new secret key.
-4. Copy the key once and store it securely.
-5. Configure API billing / credits for that Project if required.
+1. Open Google AI Studio.
+2. Open the API keys page.
+3. Create or select a Google Cloud project.
+4. Choose **Create API key**.
+5. Copy the key and store it temporarily somewhere secure.
 
-A ChatGPT Plus/Pro subscription is separate from API billing; a ChatGPT subscription does not automatically provide API usage credits.
+Do not paste this key into GitHub Pages or the repository.
 
 ## 2. Create a Cloudflare Worker
-
-You can use either the Cloudflare dashboard or Wrangler CLI.
-
-### Dashboard route
 
 1. Sign in to Cloudflare.
 2. Open **Workers & Pages**.
 3. Choose **Create application → Worker**.
-4. Give it a name such as `math-word-problems`.
-5. Replace the starter code with the contents of `backend/cloudflare-worker.js`.
-6. Deploy once.
+4. Name it something like `math-word-problems`.
+5. Replace the starter code with the full contents of `backend/cloudflare-worker.js`.
+6. Deploy the Worker.
 
-### Wrangler route
+## 3. Add the Gemini secret
 
-```bash
-npm install -g wrangler
-wrangler login
-wrangler init math-word-problems
-```
-
-Replace the generated Worker code with `cloudflare-worker.js`, then deploy:
-
-```bash
-wrangler deploy
-```
-
-## 3. Add the OpenAI key as a Worker secret
-
-With Wrangler:
-
-```bash
-wrangler secret put OPENAI_API_KEY
-```
-
-Paste the key when prompted.
-
-Or in the Cloudflare dashboard open the Worker and add an encrypted secret named:
+In the Worker dashboard open **Settings → Variables and Secrets** and add:
 
 ```text
-OPENAI_API_KEY
+GEMINI_API_KEY
 ```
 
-Do **not** add the key as a plain-text JavaScript variable.
+Set it as a **Secret**, not a normal plain-text variable, and paste the Gemini API key as the value.
+
+Then add a normal text variable:
+
+```text
+AI_PROVIDER = gemini
+```
+
+This variable is not sensitive.
+
+Optional model override:
+
+```text
+GEMINI_MODEL = gemini-2.5-flash
+```
+
+If `GEMINI_MODEL` is omitted, the Worker currently defaults to `gemini-2.5-flash`.
 
 ## 4. Connect the website
 
@@ -95,131 +84,83 @@ On the website open:
 
 **Word Problems → Parent / AI settings**
 
-Paste only the Worker base URL. The browser calls:
+Paste only the Worker base URL. The frontend calls:
 
 ```text
 POST <base-url>/word-problem
 ```
 
-## OpenAI model choice
+## Gemini free tier
 
-The current Worker uses `gpt-5.4-mini`. For this task, a smaller model is usually sufficient because the request is short, structured, and narrowly constrained. `gpt-5.4-nano` is an even cheaper option if its problem quality is acceptable.
+As of August 2026, Google documents a free tier for `gemini-2.5-flash` with free input and output tokens subject to rate limits. For family-scale word-problem generation this is likely enough to run at no API cost.
 
-As of August 2026, OpenAI lists standard API pricing for `gpt-5.4-mini` at roughly $0.75 per million input tokens and $4.50 per million output tokens, and `gpt-5.4-nano` at roughly $0.20 input / $1.25 output per million tokens. Check current OpenAI pricing before relying on these numbers because model pricing can change.
-
-For a family-sized math app, cost should generally be very small if requests are short and you generate problems in small batches rather than sending large histories.
+Important privacy tradeoff: Google's documentation says free-tier content may be used to improve Google products, while paid-tier usage has different data-use terms. This project minimizes that exposure by sending only anonymous grade/skill/performance data and never sending the student's name or other identifying information.
 
 ---
 
-# Option B — Claude / Anthropic
+# Option B — OpenAI
 
-Claude can also be used for the same backend pattern. The API key must still live only in the Worker.
+The same Worker can use OpenAI without changing the website.
 
-## 1. Create an Anthropic API key
-
-1. Sign in to the Claude / Anthropic developer console.
-2. Open **Settings → API keys**.
-3. Create a key for this project.
-4. Choose an expiration appropriate for a long-running Worker, or plan to rotate the key periodically.
-5. Copy the key and store it securely.
-6. Enable API billing / credits as required by the Anthropic Console.
-
-Anthropic's regular Claude web subscription and Claude API billing are separate products; having Claude Pro/Max does not mean the API is free.
-
-## 2. Add the Claude key to Cloudflare
-
-With Wrangler:
-
-```bash
-wrangler secret put ANTHROPIC_API_KEY
-```
-
-Or add an encrypted Worker secret named:
+Add an encrypted Worker secret:
 
 ```text
-ANTHROPIC_API_KEY
+OPENAI_API_KEY
 ```
 
-A direct Claude HTTP request uses the Anthropic Messages API and sends the key in the `x-api-key` header together with the required `anthropic-version` header.
-
-## 3. Recommended Claude model
-
-For generating short elementary word problems, start with:
+Then set the normal variable:
 
 ```text
-claude-haiku-4-5
+AI_PROVIDER = openai
 ```
 
-Haiku is the best fit here because this task needs good language variety and instruction-following but not deep agentic reasoning. Anthropic's May 2026 list price for Claude Haiku 4.5 was $1 per million input tokens and $5 per million output tokens. Check the current Anthropic pricing page before relying on that number.
+Optional model override:
 
-A Sonnet-class model can be used if you prefer the writing quality, but it is unnecessary for most of these requests and costs more.
-
-## 4. Worker implementation note
-
-The repository's current `cloudflare-worker.js` is the OpenAI implementation. To use Claude, the Worker should keep the same `/word-problem` request/response contract but replace the OpenAI call with Anthropic's `POST /v1/messages` API and parse the returned JSON text into the same object shape:
-
-```json
-{
-  "problem": "...",
-  "answer": 12,
-  "hint": "...",
-  "explanation": "...",
-  "skill": "mul",
-  "difficulty": "grade-3"
-}
+```text
+OPENAI_MODEL = gpt-5.4-mini
 ```
 
-Keeping this contract identical means the GitHub Pages frontend does not need to know which model provider is behind the Worker.
+If `OPENAI_MODEL` is omitted, the Worker defaults to `gpt-5.4-mini`.
+
+A ChatGPT Plus/Pro subscription is separate from API billing; a ChatGPT subscription does not automatically provide API usage credits.
 
 ---
 
-# Is there a free option?
+# Provider switching
 
-Yes — there are **three useful zero-cost paths**, with different tradeoffs.
+The public website always calls the same Worker endpoint. The Worker decides which provider to use based on:
 
-## 1. Built-in generator — completely free and private
+```text
+AI_PROVIDER
+```
 
-This is the safest default. No account, API key, network request, or cloud service is required. It already adapts using local student performance and keeps working offline.
+Supported values today:
 
-Use AI only as an enhancement for variety rather than making the app dependent on it.
+```text
+gemini
+openai
+```
 
-## 2. Google Gemini API free tier
-
-Google currently offers a Gemini Developer API free tier for selected models, including free input and output tokens subject to rate limits. For a small family math app this can be a very practical zero-cost AI backend.
-
-A good low-cost/free-tier candidate is a Flash or Flash-Lite model. The exact models and free quotas change, so check the Gemini API pricing and rate-limit pages before choosing one.
-
-Important privacy tradeoff: Google's free tier documentation says free-tier content may be used to improve Google products, while paid-tier usage has different data-use terms. Because this app involves children, keep the payload anonymous exactly as this project already does and do not send names or other identifying details.
-
-## 3. Cloudflare Worker free tier
-
-Cloudflare Workers themselves have a free allowance suitable for very small personal projects. The AI provider is the part that may charge, so pairing a free Worker with Gemini's free API tier can make the whole AI path effectively free at family usage levels.
+So switching providers is only a Cloudflare setting change; no GitHub Pages code needs to be changed.
 
 ---
 
-# Recommended setup for this project
+# Free fallback
 
-For now I would use this order:
-
-1. **Built-in adaptive generator** as the guaranteed fallback.
-2. **Gemini free tier** if you want truly free fresh AI-generated problems.
-3. **OpenAI `gpt-5.4-nano` or `gpt-5.4-mini`** if you want predictable structured-output behavior and very low paid usage.
-4. **Claude Haiku 4.5** if you prefer Claude's language style.
-
-The backend should eventually support a provider setting such as `openai`, `anthropic`, or `gemini`, with each API key stored as an encrypted Cloudflare Worker secret. Then changing providers would not require touching the public website.
+Even if Gemini reaches a quota limit, the Worker is down, or no AI backend is configured, `word-problems.html` still uses the built-in adaptive generator. That means the page is never dependent on a paid service or an internet connection.
 
 ---
 
 # Safety, privacy, and cost controls
 
-Because this endpoint is reachable from a public website, do not rely only on the fact that the API key is hidden. Before leaving it enabled long-term:
+Because this endpoint is reachable from a public website:
 
 - Restrict CORS to the GitHub Pages origin.
-- Add Cloudflare rate limiting or another request cap.
-- Set provider-side spend limits / budget alerts when available.
-- Keep prompts and output token limits small.
+- Keep all provider API keys in Cloudflare Secrets.
+- Add Cloudflare rate limiting or another request cap before broad public use.
+- Keep prompts and output-token limits small.
 - Do not forward student names or other identifying information.
 - Log errors, but do not log student data.
 - Keep the local generator as the fallback whenever the backend errors or reaches quota.
 
-For this app, generating a small batch of problems ahead of time and caching them locally is preferable to calling the model on every screen transition. It lowers cost, reduces latency, and makes temporary API outages invisible to the student.
+For this app, generating a small batch of problems ahead of time and caching them locally is preferable to calling the model on every screen transition. It lowers latency and API usage and makes temporary outages invisible to the student.
