@@ -37,9 +37,25 @@ function safeEqual(a, b) {
 
 const allowedSkills = ['add','sub','mul','div'];
 
-const schema = {
+// OpenAI accepts full JSON Schema here, including additionalProperties.
+const openAISchema = {
   type: 'object',
   additionalProperties: false,
+  properties: {
+    problem: {type: 'string'},
+    answer: {type: 'number'},
+    hint: {type: 'string'},
+    explanation: {type: 'string'},
+    skill: {type: 'string', enum: allowedSkills},
+    difficulty: {type: 'string'},
+  },
+  required: ['problem','answer','hint','explanation','skill','difficulty'],
+};
+
+// Gemini's responseSchema supports a JSON-Schema-like subset. Do not send
+// additionalProperties, which Gemini rejects as an unknown field.
+const geminiSchema = {
+  type: 'object',
   properties: {
     problem: {type: 'string'},
     answer: {type: 'number'},
@@ -71,7 +87,7 @@ async function generateWithGemini(env, instructions) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`;
   const response = await fetch(endpoint, {
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({system_instruction:{parts:[{text:instructions}]},contents:[{role:'user',parts:[{text:'Create the next problem.'}]}],generationConfig:{temperature:0.9,maxOutputTokens:350,responseMimeType:'application/json',responseSchema:schema}}),
+    body:JSON.stringify({system_instruction:{parts:[{text:instructions}]},contents:[{role:'user',parts:[{text:'Create the next problem.'}]}],generationConfig:{temperature:0.9,maxOutputTokens:350,responseMimeType:'application/json',responseSchema:geminiSchema}}),
   });
   if (!response.ok) { const detail=await response.text(); console.error('Gemini error',response.status,detail.slice(0,500)); throw new Error('Gemini generation failed'); }
   const payload=await response.json();
@@ -83,7 +99,7 @@ async function generateWithGemini(env, instructions) {
 async function generateWithOpenAI(env, instructions) {
   if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is not configured');
   const model=env.OPENAI_MODEL||DEFAULT_OPENAI_MODEL;
-  const response=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{'Authorization':`Bearer ${env.OPENAI_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({model,input:[{role:'system',content:instructions},{role:'user',content:'Create the next problem.'}],text:{format:{type:'json_schema',name:'word_problem',strict:true,schema}},max_output_tokens:350})});
+  const response=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{'Authorization':`Bearer ${env.OPENAI_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({model,input:[{role:'system',content:instructions},{role:'user',content:'Create the next problem.'}],text:{format:{type:'json_schema',name:'word_problem',strict:true,schema:openAISchema}},max_output_tokens:350})});
   if(!response.ok){const detail=await response.text();console.error('OpenAI error',response.status,detail.slice(0,500));throw new Error('OpenAI generation failed');}
   const payload=await response.json();let text=payload.output_text;
   if(!text&&Array.isArray(payload.output)){for(const item of payload.output){for(const part of(item.content||[])){if(part.type==='output_text'&&part.text)text=part.text;}}}
@@ -97,8 +113,6 @@ export default {
     if(request.method==='OPTIONS')return new Response(null,{status:204,headers:cors(origin)});
     const url=new URL(request.url);
 
-    // Safe deployment diagnostic: reports only whether expected bindings exist.
-    // It never returns secret values and does not call an AI provider.
     if(request.method==='GET'&&url.pathname==='/health') {
       const provider=String(env.AI_PROVIDER||DEFAULT_PROVIDER).toLowerCase();
       return json({
