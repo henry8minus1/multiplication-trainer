@@ -18,11 +18,7 @@
   }
 }
 *{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  background:var(--bg); color:var(--fg);
-}
+body{margin:0;font-family:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--fg)}
 button,select,input{font:inherit}
 .app{max-width:960px;margin:0 auto;padding:clamp(16px,4vw,40px)}
 .top{display:flex;gap:14px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;margin-bottom:18px}
@@ -30,10 +26,12 @@ button,select,input{font:inherit}
 .sub{font-size:15px;color:var(--muted);margin-top:4px}
 .stats{display:flex;gap:8px;flex-wrap:wrap}
 .pill{background:var(--panel);border:1px solid var(--border);padding:9px 13px;border-radius:999px;font-weight:800}
-.setup{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+.setup{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px}
 .setup-box{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:13px 15px}
 .setup-box label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.07em;font-weight:850;color:var(--muted);margin-bottom:7px}
-.setup-box select{width:100%;min-height:48px;font-size:18px;font-weight:850;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--fg);padding:0 12px}
+.setup-box select,.setup-box input{width:100%;min-height:48px;font-size:18px;font-weight:850;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--fg);padding:0 12px}
+.user-row{display:grid;grid-template-columns:1fr auto;gap:8px}
+.add-user{min-width:48px;min-height:48px;border-radius:12px;border:1px solid var(--border);background:var(--accent);color:#fff;font-size:24px;font-weight:900;cursor:pointer}
 .range-note{font-size:13px;color:var(--muted);margin-top:6px}
 .progress{height:10px;background:var(--choice);border-radius:99px;overflow:hidden;margin-bottom:22px}
 .bar{height:100%;width:0;background:var(--accent2);border-radius:99px;transition:width .3s}
@@ -55,17 +53,24 @@ button,select,input{font:inherit}
 .controls{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:17px}
 .small{min-height:48px;padding:10px 16px;border-radius:14px;border:1px solid var(--border);background:transparent;color:var(--fg);font-weight:800;cursor:pointer}
 .primary{background:var(--accent);color:#fff;border-color:var(--accent)}
-.mastery{margin-top:24px}
-.mastery-title{font-weight:900;margin-bottom:10px}
+.mastery,.history{margin-top:24px}
+.mastery-title,.history-title{font-weight:900;margin-bottom:10px}
 .facts{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;max-width:650px;margin:0 auto}
 .fact{min-height:48px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:850;background:var(--choice);border:1px solid var(--border)}
 .fact.learning{background:#efe5bd;color:#574811}
 .fact.known{background:#d9ead8;color:#254a29}
+.history-box{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:14px 16px}
+.history-summary{font-weight:800;margin-bottom:10px}
+.history-list{display:grid;gap:8px}
+.history-item{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--border);font-size:14px}
+.history-item:first-child{border-top:0}
+.history-muted{color:var(--muted)}
 .finish{display:none;text-align:center;padding:25px}
 .finish h2{font-size:42px;margin:0 0 10px}
 .finish p{font-size:18px;line-height:1.5;color:var(--muted)}
-.small:focus-visible,.answer:focus-visible,.type-input:focus-visible,select:focus-visible{outline:4px solid #8fae84;outline-offset:3px}
-@media(max-width:520px){.setup{grid-template-columns:1fr}.facts{grid-template-columns:repeat(3,minmax(0,1fr))}.card{border-radius:22px}}
+.small:focus-visible,.answer:focus-visible,.type-input:focus-visible,select:focus-visible,input:focus-visible,.add-user:focus-visible{outline:4px solid #8fae84;outline-offset:3px}
+@media(max-width:720px){.setup{grid-template-columns:1fr 1fr}.setup-box:first-child{grid-column:1/-1}}
+@media(max-width:520px){.setup{grid-template-columns:1fr}.setup-box:first-child{grid-column:auto}.facts{grid-template-columns:repeat(3,minmax(0,1fr))}.card{border-radius:22px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -84,20 +89,20 @@ button,select,input{font:inherit}
 
   <div class="setup">
     <div class="setup-box">
+      <label for="student">Student</label>
+      <div class="user-row">
+        <select id="student" aria-label="Choose student"></select>
+        <button type="button" class="add-user" id="add-user" aria-label="Add student">+</button>
+      </div>
+      <div class="range-note">Progress is remembered on this browser/device.</div>
+    </div>
+    <div class="setup-box">
       <label for="table">Number to practice</label>
       <select id="table">
-        <option value="1">×1</option>
-        <option value="2">×2</option>
-        <option value="3" selected>×3</option>
-        <option value="4">×4</option>
-        <option value="5">×5</option>
-        <option value="6">×6</option>
-        <option value="7">×7</option>
-        <option value="8">×8</option>
-        <option value="9">×9</option>
-        <option value="10">×10</option>
-        <option value="11">×11</option>
-        <option value="12">×12</option>
+        <option value="1">×1</option><option value="2">×2</option><option value="3" selected>×3</option>
+        <option value="4">×4</option><option value="5">×5</option><option value="6">×6</option>
+        <option value="7">×7</option><option value="8">×8</option><option value="9">×9</option>
+        <option value="10">×10</option><option value="11">×11</option><option value="12">×12</option>
       </select>
     </div>
     <div class="setup-box">
@@ -143,6 +148,14 @@ button,select,input{font:inherit}
     <div class="mastery-title" id="mastery-title"></div>
     <div class="facts" id="facts"></div>
   </section>
+
+  <section class="history">
+    <div class="history-title" id="history-title">Progress history</div>
+    <div class="history-box">
+      <div class="history-summary" id="history-summary"></div>
+      <div class="history-list" id="history-list"></div>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -150,268 +163,243 @@ button,select,input{font:inherit}
   const $ = id => document.getElementById(id);
   const jsWarning = $('js-warning');
   if (jsWarning) jsWarning.style.display = 'none';
+
   const e = {
-    table:$('table'), range:$('range'), rangeNote:$('range-note'), brand:$('brand'),
-    streak:$('streak'), score:$('score'), bar:$('bar'), play:$('play'), finish:$('finish'),
-    finishText:$('finish-text'), mode:$('mode'), q:$('question'), visual:$('visual'),
-    answers:$('answers'), form:$('type-form'), input:$('type-input'), feedback:$('feedback'),
-    explain:$('explain'), facts:$('facts'), masteryTitle:$('mastery-title'),
-    hint:$('hint'), restart:$('restart'), again:$('again')
+    student:$('student'), addUser:$('add-user'), table:$('table'), range:$('range'), rangeNote:$('range-note'), brand:$('brand'),
+    streak:$('streak'), score:$('score'), bar:$('bar'), play:$('play'), finish:$('finish'), finishText:$('finish-text'),
+    mode:$('mode'), q:$('question'), visual:$('visual'), answers:$('answers'), form:$('type-form'), input:$('type-input'),
+    feedback:$('feedback'), explain:$('explain'), facts:$('facts'), masteryTitle:$('mastery-title'), hint:$('hint'),
+    restart:$('restart'), again:$('again'), historyTitle:$('history-title'), historySummary:$('history-summary'), historyList:$('history-list')
   };
 
-  let table = 3, maxFact = 5, s;
+  const STORAGE_KEY = 'multiplication-trainer-progress-v1';
+  let table = 3, maxFact = 5, currentUser = 'Luke', s, finished = false;
 
-  function totalFacts() {
-    return maxFact + 1;
+  function defaultData() {
+    return {version:1, users:{Luke:{mastery:{},history:[]}, Blake:{mastery:{},history:[]}}};
   }
 
-  function maxQuestions() {
-    return totalFacts() * 5;
+  function loadData() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if (parsed && parsed.users && typeof parsed.users === 'object') return parsed;
+    } catch (_) {}
+    return defaultData();
   }
 
-  function knownCount() {
-    return s.mastery.slice(0, maxFact + 1).filter(x => x >= 3).length;
+  let data = loadData();
+
+  function saveData() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) {}
   }
 
-  function allStrong() {
-    return knownCount() === totalFacts();
+  function ensureUser(name) {
+    if (!data.users[name]) data.users[name] = {mastery:{}, history:[]};
+    if (!data.users[name].mastery) data.users[name].mastery = {};
+    if (!Array.isArray(data.users[name].history)) data.users[name].history = [];
   }
+
+  function tableMastery(name, t) {
+    ensureUser(name);
+    const key = String(t);
+    if (!Array.isArray(data.users[name].mastery[key])) data.users[name].mastery[key] = Array(13).fill(0);
+    const arr = data.users[name].mastery[key].slice(0,13);
+    while (arr.length < 13) arr.push(0);
+    return arr.map(x => Math.max(0, Math.min(3, Number(x) || 0)));
+  }
+
+  function saveMastery() {
+    ensureUser(currentUser);
+    data.users[currentUser].mastery[String(table)] = s.mastery.slice(0,13);
+    saveData();
+  }
+
+  function renderUsers() {
+    const names = Object.keys(data.users);
+    if (!names.length) { data = defaultData(); saveData(); }
+    if (!data.users[currentUser]) currentUser = Object.keys(data.users)[0];
+    e.student.innerHTML = '';
+    for (const name of Object.keys(data.users)) {
+      const o = document.createElement('option');
+      o.value = name; o.textContent = name; o.selected = name === currentUser;
+      e.student.appendChild(o);
+    }
+  }
+
+  function totalFacts() { return maxFact + 1; }
+  function maxQuestions() { return totalFacts() * 5; }
+  function knownCount() { return s.mastery.slice(0,maxFact+1).filter(x => x >= 3).length; }
+  function allStrong() { return knownCount() === totalFacts(); }
 
   function fresh() {
     return {
       round:0, score:0, streak:0, current:0, locked:false,
-      mastery:Array(13).fill(0), misses:Array(13).fill(0), recent:[], type:'choice'
+      mastery:tableMastery(currentUser, table), misses:Array(13).fill(0), recent:[], type:'choice'
     };
   }
 
   function labels() {
-    e.brand.textContent = 'Master the ×' + table + 's';
-    e.masteryTitle.textContent = '×' + table + ' Fact Power · 0–' + maxFact;
-    e.rangeNote.textContent = 'Questions from ' + table + '×0 through ' + table + '×' + maxFact + ' · practice ends when all are strong (up to ' + maxQuestions() + ' questions)';
+    e.brand.textContent = currentUser + ' · Master the ×' + table + 's';
+    e.masteryTitle.textContent = currentUser + ' · ×' + table + ' Fact Power · 0–' + maxFact;
+    e.rangeNote.textContent = 'Questions from ' + table + '×0 through ' + table + '×' + maxFact + ' · mastered facts carry forward';
+    e.historyTitle.textContent = currentUser + ' · Progress history';
   }
 
   function init() {
+    if (s && !finished) saveMastery();
+    finished = false;
     s = fresh();
     labels();
     e.play.style.display = 'block';
     e.finish.style.display = 'none';
-    stats();
-    facts();
+    stats(); facts(); history();
+    e.bar.style.width = (knownCount()/totalFacts()*100) + '%';
     next();
   }
 
   function pick() {
     const pool = [];
-    for (let n = 0; n <= maxFact; n++) {
+    for (let n=0;n<=maxFact;n++) {
       if (s.mastery[n] >= 3) continue;
-      let w = 4 + s.misses[n] * 4 + (3 - s.mastery[n]) * 2;
-      if (s.recent.slice(-2).includes(n)) w = Math.max(1, Math.floor(w / 4));
-      for (let k = 0; k < Math.max(1, w); k++) pool.push(n);
+      let w = 4 + s.misses[n]*4 + (3-s.mastery[n])*2;
+      if (s.recent.slice(-2).includes(n)) w = Math.max(1,Math.floor(w/4));
+      for (let k=0;k<Math.max(1,w);k++) pool.push(n);
     }
-    return pool.length ? pool[Math.floor(Math.random() * pool.length)] : 0;
+    return pool.length ? pool[Math.floor(Math.random()*pool.length)] : 0;
   }
 
   function shuffle(a) {
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
+    for (let i=a.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
     return a;
   }
 
   function options(n) {
-    const c = n * table;
-    const v = new Set([c]);
-    const cand = [
-      c + table, c - table, c + 2 * table, c - 2 * table,
-      c + 1, c - 1, n * (table + 1), Math.max(0, n * (table - 1))
-    ].filter(x => x >= 0 && x <= 144 && x !== c);
-
+    const c=n*table, v=new Set([c]);
+    const cand=[c+table,c-table,c+2*table,c-2*table,c+1,c-1,n*(table+1),Math.max(0,n*(table-1))]
+      .filter(x=>x>=0&&x<=144&&x!==c);
     shuffle(cand);
-    for (const x of cand) if (v.size < 4) v.add(x);
-    while (v.size < 4) v.add(Math.floor(Math.random() * Math.max(20, table * maxFact + 10)));
+    for (const x of cand) if (v.size<4) v.add(x);
+    while (v.size<4) v.add(Math.floor(Math.random()*Math.max(20,table*maxFact+10)));
     return shuffle([...v]);
   }
 
   function next() {
-    if (allStrong() || s.round >= maxQuestions()) {
-      done();
-      return;
-    }
-    s.locked = false;
-    s.current = pick();
-    s.recent.push(s.current);
-    s.round++;
-
-    const r = s.round;
-    s.type = (r <= 5 || r % 3 === 0) ? 'choice' : 'type';
-    e.bar.style.width = (knownCount() / totalFacts() * 100) + '%';
-    e.q.textContent = table + ' × ' + s.current;
-
-    const stage = r <= 5 ? 'Build the pattern' : r <= 12 ? 'Practice the fact' : 'Fast recall';
-    e.mode.textContent = stage + ' · ' + (s.type === 'type' ? 'TYPE IT' : 'CHOOSE IT');
-    e.feedback.textContent = s.type === 'type'
-      ? 'Type the answer.'
-      : r <= 5 ? 'Look at the groups, then choose.' : 'Choose the answer.';
-    e.explain.textContent = '';
-
-    visual(stage !== 'Fast recall');
-    questionUI();
+    if (allStrong() || s.round >= maxQuestions()) { done(); return; }
+    s.locked=false; s.current=pick(); s.recent.push(s.current); s.round++;
+    const r=s.round;
+    s.type=(r<=5 || r%3===0) ? 'choice' : 'type';
+    e.bar.style.width=(knownCount()/totalFacts()*100)+'%';
+    e.q.textContent=table+' × '+s.current;
+    const stage=r<=5?'Build the pattern':r<=12?'Practice the fact':'Fast recall';
+    e.mode.textContent=stage+' · '+(s.type==='type'?'TYPE IT':'CHOOSE IT');
+    e.feedback.textContent=s.type==='type'?'Type the answer.':r<=5?'Look at the groups, then choose.':'Choose the answer.';
+    e.explain.textContent=''; visual(stage!=='Fast recall'); questionUI();
   }
 
   function visual(show) {
-    e.visual.innerHTML = '';
-    e.visual.style.display = show ? 'flex' : 'none';
-    if (!show) return;
-
-    for (let g = 0; g < s.current; g++) {
-      const group = document.createElement('div');
-      group.className = 'group';
-      for (let d = 0; d < table; d++) {
-        const dot = document.createElement('span');
-        dot.className = 'dot';
-        group.appendChild(dot);
-      }
+    e.visual.innerHTML=''; e.visual.style.display=show?'flex':'none'; if(!show)return;
+    for(let g=0;g<s.current;g++){
+      const group=document.createElement('div'); group.className='group';
+      for(let d=0;d<table;d++){const dot=document.createElement('span');dot.className='dot';group.appendChild(dot)}
       e.visual.appendChild(group);
     }
   }
 
   function questionUI() {
-    e.answers.innerHTML = '';
-    if (s.type === 'type') {
-      e.answers.style.display = 'none';
-      e.form.style.display = 'flex';
-      e.input.value = '';
-      setTimeout(() => e.input.focus(), 0);
-    } else {
-      e.form.style.display = 'none';
-      e.answers.style.display = 'grid';
-      for (const v of options(s.current)) {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'answer';
-        b.textContent = v;
-        b.addEventListener('click', () => answer(v, b));
-        e.answers.appendChild(b);
+    e.answers.innerHTML='';
+    if(s.type==='type'){
+      e.answers.style.display='none';e.form.style.display='flex';e.input.value='';setTimeout(()=>e.input.focus(),0);
+    }else{
+      e.form.style.display='none';e.answers.style.display='grid';
+      for(const v of options(s.current)){
+        const b=document.createElement('button');b.type='button';b.className='answer';b.textContent=v;
+        b.addEventListener('click',()=>answer(v,b));e.answers.appendChild(b);
       }
     }
   }
 
-  function answer(v, b) {
-    if (s.locked) return;
-    v = Number(v);
-    if (!Number.isFinite(v)) return;
-
-    s.locked = true;
-    const c = s.current * table;
-
-    if (v === c) {
-      if (b) b.classList.add('correct');
-      s.streak++;
-      s.score += (s.type === 'type' ? 15 : 10) + Math.min(10, s.streak);
-      s.mastery[s.current] = Math.min(3, s.mastery[s.current] + 1);
-      e.feedback.textContent = s.streak >= 5 ? '🔥 ' + s.streak + ' in a row!' : 'Yes! ' + c + ' is right!';
-      e.explain.textContent = table + ' × ' + s.current + ' = ' + c;
-      setTimeout(next, 850);
-    } else {
-      if (b) b.classList.add('wrong');
-      s.streak = 0;
-      s.misses[s.current]++;
-      s.mastery[s.current] = Math.max(0, s.mastery[s.current] - 1);
-
-      if (s.type === 'choice') {
-        for (const x of e.answers.querySelectorAll('button')) {
-          if (Number(x.textContent) === c) x.classList.add('correct');
-        }
-      }
-
-      e.feedback.textContent = 'Almost — the answer is ' + c + '.';
-      e.explain.textContent = s.current + ' groups of ' + table + ' = ' + c + '. You’ll see this one again.';
-      setTimeout(next, 1500);
+  function answer(v,b) {
+    if(s.locked)return; v=Number(v); if(!Number.isFinite(v))return;
+    s.locked=true; const c=s.current*table;
+    if(v===c){
+      if(b)b.classList.add('correct'); s.streak++; s.score+=(s.type==='type'?15:10)+Math.min(10,s.streak);
+      s.mastery[s.current]=Math.min(3,s.mastery[s.current]+1);
+      e.feedback.textContent=s.streak>=5?'🔥 '+s.streak+' in a row!':'Yes! '+c+' is right!';
+      e.explain.textContent=table+' × '+s.current+' = '+c; setTimeout(next,850);
+    }else{
+      if(b)b.classList.add('wrong'); s.streak=0; s.misses[s.current]++; s.mastery[s.current]=Math.max(0,s.mastery[s.current]-1);
+      if(s.type==='choice') for(const x of e.answers.querySelectorAll('button')) if(Number(x.textContent)===c)x.classList.add('correct');
+      e.feedback.textContent='Almost — the answer is '+c+'.';
+      e.explain.textContent=s.current+' groups of '+table+' = '+c+'. You’ll see this one again.'; setTimeout(next,1500);
     }
-
-    stats();
-    facts();
-    e.bar.style.width = (knownCount() / totalFacts() * 100) + '%';
+    saveMastery(); stats(); facts(); history(); e.bar.style.width=(knownCount()/totalFacts()*100)+'%';
   }
 
-  function stats() {
-    e.streak.textContent = s.streak;
-    e.score.textContent = s.score;
-  }
+  function stats(){e.streak.textContent=s.streak;e.score.textContent=s.score}
 
-  function facts() {
-    e.facts.innerHTML = '';
-    for (let n = 0; n <= maxFact; n++) {
-      const d = document.createElement('div');
-      const m = s.mastery[n];
-      d.className = 'fact' + (m >= 3 ? ' known' : m > 0 ? ' learning' : '');
-      d.textContent = table + '×' + n;
+  function facts(){
+    e.facts.innerHTML='';
+    for(let n=0;n<=maxFact;n++){
+      const d=document.createElement('div'),m=s.mastery[n];
+      d.className='fact'+(m>=3?' known':m>0?' learning':''); d.textContent=table+'×'+n; d.title='Mastery '+m+' of 3';
       e.facts.appendChild(d);
     }
   }
 
-  function hint() {
-    if (s.locked) return;
-    const n = s.current;
-
-    if (n === 0) {
-      e.feedback.textContent = 'Zero groups means zero.';
-      e.explain.textContent = table + ' × 0 = 0';
-      return;
+  function history(){
+    ensureUser(currentUser);
+    const all=data.users[currentUser].history;
+    let masteredAcross=0;
+    for(let t=1;t<=12;t++) masteredAcross += tableMastery(currentUser,t).filter(x=>x>=3).length;
+    e.historySummary.textContent='Strong facts saved: '+masteredAcross+' of 156 across ×1–×12 · '+all.length+' completed session'+(all.length===1?'':'s');
+    e.historyList.innerHTML='';
+    const recent=all.slice(-8).reverse();
+    if(!recent.length){
+      const d=document.createElement('div'); d.className='history-muted'; d.textContent='No completed sessions yet.'; e.historyList.appendChild(d); return;
     }
-
-    const p = (n - 1) * table;
-    e.feedback.textContent = 'Think: ' + table + ' × ' + (n - 1) + ' = ' + p + ', then add ' + table + '.';
-    e.explain.textContent = p + ' + ' + table + ' = ?';
-    visual(true);
-  }
-
-  function done() {
-    const known = knownCount();
-    e.bar.style.width = (known / totalFacts() * 100) + '%';
-    e.play.style.display = 'none';
-    e.finish.style.display = 'block';
-
-    if (known === totalFacts()) {
-      e.finishText.textContent = 'You scored ' + s.score + ' points and made all ' + totalFacts() + ' facts strong in ' + s.round + ' questions!';
-    } else {
-      e.finishText.textContent = 'You scored ' + s.score + ' points and made ' + known + ' of ' + totalFacts() + ' facts strong in ' + s.round + ' questions. Practice again to keep building the remaining facts.';
+    for(const h of recent){
+      const row=document.createElement('div'); row.className='history-item';
+      const when=document.createElement('span'); when.textContent=new Date(h.when).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+      const result=document.createElement('span'); result.textContent='×'+h.table+' · 0–'+h.maxFact+' · '+h.known+'/'+(h.maxFact+1)+' strong · '+h.questions+' questions · '+h.score+' pts';
+      row.append(when,result); e.historyList.appendChild(row);
     }
   }
 
-  e.form.addEventListener('submit', ev => {
-    ev.preventDefault();
-    if (s.locked) return;
-    const raw = e.input.value.trim();
-    if (raw === '') {
-      e.feedback.textContent = 'Type an answer first.';
-      return;
-    }
-    const v = Number(raw);
-    if (!Number.isFinite(v) || v < 0 || v > 144) {
-      e.feedback.textContent = 'Enter a number from 0 to 144.';
-      return;
-    }
-    answer(v, null);
+  function hint(){
+    if(s.locked)return; const n=s.current;
+    if(n===0){e.feedback.textContent='Zero groups means zero.';e.explain.textContent=table+' × 0 = 0';return}
+    const p=(n-1)*table; e.feedback.textContent='Think: '+table+' × '+(n-1)+' = '+p+', then add '+table+'.';
+    e.explain.textContent=p+' + '+table+' = ?'; visual(true);
+  }
+
+  function done(){
+    if(finished)return; finished=true; saveMastery();
+    const known=knownCount(); e.bar.style.width=(known/totalFacts()*100)+'%'; e.play.style.display='none'; e.finish.style.display='block';
+    ensureUser(currentUser);
+    data.users[currentUser].history.push({when:new Date().toISOString(),table,maxFact,known,questions:s.round,score:s.score});
+    if(data.users[currentUser].history.length>100)data.users[currentUser].history=data.users[currentUser].history.slice(-100);
+    saveData(); history();
+    if(known===totalFacts()) e.finishText.textContent='You scored '+s.score+' points and have all '+totalFacts()+' facts strong in this range! This session took '+s.round+' questions.';
+    else e.finishText.textContent='You scored '+s.score+' points and have '+known+' of '+totalFacts()+' facts strong after '+s.round+' questions. Your progress is saved for next time.';
+  }
+
+  e.form.addEventListener('submit',ev=>{
+    ev.preventDefault();if(s.locked)return;const raw=e.input.value.trim();
+    if(raw===''){e.feedback.textContent='Type an answer first.';return}
+    const v=Number(raw);if(!Number.isFinite(v)||v<0||v>144){e.feedback.textContent='Enter a number from 0 to 144.';return}
+    answer(v,null);
   });
 
-  e.table.addEventListener('change', () => {
-    table = Math.max(1, Math.min(12, Number(e.table.value) || 3));
-    init();
+  e.student.addEventListener('change',()=>{currentUser=e.student.value;init()});
+  e.addUser.addEventListener('click',()=>{
+    const name=(window.prompt('Student name:')||'').trim().slice(0,30);
+    if(!name)return; ensureUser(name); currentUser=name; saveData(); renderUsers(); init();
   });
+  e.table.addEventListener('change',()=>{table=Math.max(1,Math.min(12,Number(e.table.value)||3));init()});
+  e.range.addEventListener('change',()=>{const chosen=Number(e.range.value);maxFact=[5,10,12].includes(chosen)?chosen:5;init()});
+  e.hint.addEventListener('click',hint); e.restart.addEventListener('click',init); e.again.addEventListener('click',init);
 
-  e.range.addEventListener('change', () => {
-    const chosen = Number(e.range.value);
-    maxFact = [5, 10, 12].includes(chosen) ? chosen : 5;
-    init();
-  });
-
-  e.hint.addEventListener('click', hint);
-  e.restart.addEventListener('click', init);
-  e.again.addEventListener('click', init);
-
-  init();
+  renderUsers(); init();
 })();
 </script>
 </body>
