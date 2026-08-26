@@ -38,6 +38,16 @@
   }
   function redraw(){drawTemplate();ctx.strokeStyle='#171717';ctx.lineWidth=Math.max(5,canvas.width*.008);ctx.lineCap='round';ctx.lineJoin='round';for(const st of strokes){if(st.length<1)continue;ctx.beginPath();ctx.moveTo(st[0].x*canvas.width,st[0].y*canvas.height);for(let i=1;i<st.length;i++)ctx.lineTo(st[i].x*canvas.width,st[i].y*canvas.height);ctx.stroke()}}
   function reset(){strokes=[];background='blank';toolButtons.forEach(x=>x.classList.remove('on'));if(known)known.value='';if(unknown)unknown.value='';redraw()}
+  function snapshot(){
+    const used=strokes.length>0||background!=='blank'||Boolean(known&&known.value.trim())||Boolean(unknown&&unknown.value.trim());
+    let image=null;
+    if(strokes.length){
+      try{
+        const out=document.createElement('canvas'),w=320,h=220;out.width=w;out.height=h;const o=out.getContext('2d');o.fillStyle='#fff';o.fillRect(0,0,w,h);o.drawImage(canvas,0,0,w,h);image=out.toDataURL('image/jpeg',.55);
+      }catch(_){}
+    }
+    return {tool:background,known:known?known.value.trim().slice(0,180):'',finding:unknown?unknown.value.trim().slice(0,180):'',drawingUsed:strokes.length>0,strokeCount:strokes.length,used,image};
+  }
   canvas.addEventListener('pointerdown',ev=>{ev.preventDefault();canvas.setPointerCapture(ev.pointerId);current=[pt(ev)];strokes.push(current);redraw()});
   canvas.addEventListener('pointermove',ev=>{if(!current)return;current.push(pt(ev));redraw()});
   const end=()=>{current=null};canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
@@ -46,6 +56,6 @@
   clear.addEventListener('click',()=>{strokes=[];redraw()});undo.addEventListener('click',()=>{strokes.pop();redraw()});
   window.addEventListener('resize',()=>{if(wrap.style.display!=='none')size()});
   if(problem){let last='';new MutationObserver(()=>{const now=problem.textContent;if(now&&now!=='Loading…'&&now!==last){last=now;reset()}}).observe(problem,{childList:true,subtree:true,characterData:true})}
-  window.MathWordTools={reset};
+  window.MathWordTools={reset,snapshot};
   size();
 })();
