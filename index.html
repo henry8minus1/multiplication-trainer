@@ -16,19 +16,14 @@
 <body>
 <div class="app">
   <div class="top"><div><div class="brand" id="brand">Multiplication Trainer</div><div class="sub">See it → choose it → type it → remember it.</div></div><div class="stats"><div class="pill">🔥 <span id="streak">0</span></div><div class="pill">⭐ <span id="score">0</span></div></div></div>
-
   <div class="setup">
     <div class="setup-box"><label for="student">Student</label><div class="student-row"><select id="student"></select><button type="button" class="icon-btn" id="add-student" aria-label="Add student">＋</button></div></div>
     <div class="setup-box"><div class="box-label">Tables to practice</div><div class="table-picks" id="table-picks"></div><div class="range-note" id="table-note"></div></div>
     <div class="setup-box"><label for="range">Fact range</label><select id="range"><option value="5">Learning · through ×5</option><option value="10">Growing · through ×10</option><option value="12">Mastery · through ×12</option></select><div class="range-note" id="range-note"></div></div>
   </div>
-
   <div class="progress"><div class="bar" id="bar"></div></div>
-
   <section class="card" id="play"><div class="mode" id="mode"></div><div class="question" id="question"></div><div class="visual" id="visual"></div><div class="answer-grid" id="answers"></div><form class="type-wrap" id="type-form"><input class="type-input" id="type-input" type="number" inputmode="numeric" min="0" max="144" autocomplete="off" aria-label="Type your answer"><button class="submit" type="submit">Check answer</button></form><div class="feedback" id="feedback" aria-live="polite"></div><div class="explain" id="explain"></div><div class="controls"><button type="button" class="small" id="hint">Show a hint</button><button type="button" class="small" id="restart">Restart session</button></div></section>
-
   <section class="finish" id="finish"><h2>Nice work! 🎉</h2><p id="finish-text"></p><button type="button" class="small primary" id="again">Practice again</button></section>
-
   <section class="mastery"><div class="section-title" id="mastery-title">Saved mastery</div><div class="summary" id="mastery-summary"></div><div class="facts" id="facts"></div></section>
   <section class="history"><div class="section-title">Progress history</div><div class="summary" id="overall-summary"></div><div class="history-list" id="history-list"></div></section>
 </div>
@@ -37,15 +32,11 @@
   const $=id=>document.getElementById(id);
   const e={student:$('student'),addStudent:$('add-student'),tablePicks:$('table-picks'),tableNote:$('table-note'),range:$('range'),rangeNote:$('range-note'),brand:$('brand'),streak:$('streak'),score:$('score'),bar:$('bar'),play:$('play'),finish:$('finish'),finishText:$('finish-text'),mode:$('mode'),q:$('question'),visual:$('visual'),answers:$('answers'),form:$('type-form'),input:$('type-input'),feedback:$('feedback'),explain:$('explain'),facts:$('facts'),masteryTitle:$('mastery-title'),masterySummary:$('mastery-summary'),overallSummary:$('overall-summary'),historyList:$('history-list'),hint:$('hint'),restart:$('restart'),again:$('again')};
   const KEY='multiplication-trainer-v2';
+  const SESSION_QUESTIONS=20;
   let data=load(),studentId=data.activeStudent||data.students[0].id,tables=[3],maxFact=5,s;
-
   function uid(){return 'u'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
   function blankStudent(name){return {id:uid(),name,mastery:{},history:[]}}
-  function load(){
-    try{const raw=localStorage.getItem(KEY);if(raw){const x=JSON.parse(raw);if(x&&Array.isArray(x.students)&&x.students.length)return x}}
-    catch(_){ }
-    return {students:[blankStudent('Luke'),blankStudent('Blake')],activeStudent:null};
-  }
+  function load(){try{const raw=localStorage.getItem(KEY);if(raw){const x=JSON.parse(raw);if(x&&Array.isArray(x.students)&&x.students.length)return x}}catch(_){ }return {students:[blankStudent('Luke'),blankStudent('Blake')],activeStudent:null};}
   function save(){data.activeStudent=studentId;try{localStorage.setItem(KEY,JSON.stringify(data))}catch(_){}}
   function student(){return data.students.find(x=>x.id===studentId)||data.students[0]}
   function factKey(t,n){return t+'x'+n}
@@ -53,70 +44,30 @@
   function setSaved(t,n,v){student().mastery[factKey(t,n)]=Math.max(0,Math.min(3,v));save()}
   function selectedFacts(){const a=[];for(const t of tables)for(let n=0;n<=maxFact;n++)a.push([t,n]);return a}
   function totalFacts(){return selectedFacts().length}
-  function maxQuestions(){return totalFacts()*5}
+  function maxQuestions(){return SESSION_QUESTIONS}
   function knownCount(){return selectedFacts().filter(([t,n])=>s.mastery[factKey(t,n)]>=3).length}
   function allStrong(){return knownCount()===totalFacts()}
-
-  function fresh(){
-    const mastery={};for(const [t,n] of selectedFacts())mastery[factKey(t,n)]=getSaved(t,n);
-    return {round:0,score:0,streak:0,current:[tables[0],0],locked:false,mastery,misses:{},recent:[],type:'choice',startKnown:Object.values(mastery).filter(v=>v>=3).length};
-  }
-
+  function fresh(){const mastery={};for(const [t,n] of selectedFacts())mastery[factKey(t,n)]=getSaved(t,n);return {round:0,score:0,streak:0,current:[tables[0],0],locked:false,mastery,misses:{},recent:[],type:'choice',startKnown:Object.values(mastery).filter(v=>v>=3).length};}
   function renderStudents(){e.student.innerHTML='';for(const x of data.students){const o=document.createElement('option');o.value=x.id;o.textContent=x.name;e.student.appendChild(o)}e.student.value=studentId}
   function renderTablePicks(){e.tablePicks.innerHTML='';for(let t=1;t<=12;t++){const b=document.createElement('button');b.type='button';b.className='table-pick'+(tables.includes(t)?' on':'');b.textContent='×'+t;b.setAttribute('aria-pressed',tables.includes(t));b.addEventListener('click',()=>toggleTable(t));e.tablePicks.appendChild(b)}e.tableNote.textContent=tables.length===1?'Practicing ×'+tables[0]:'Practicing ×'+tables.join(', ×')}
-  function labels(){e.brand.textContent=tables.length===1?'Master the ×'+tables[0]+'s':'Master ×'+tables.join(', ×');e.rangeNote.textContent='Facts 0–'+maxFact+' · '+totalFacts()+' total · up to '+maxQuestions()+' questions';renderTablePicks()}
-
+  function labels(){e.brand.textContent=tables.length===1?'Master the ×'+tables[0]+'s':'Master ×'+tables.join(', ×');e.rangeNote.textContent='Facts 0–'+maxFact+' · '+totalFacts()+' total · 20 questions per session';renderTablePicks()}
   function init(){s=fresh();labels();e.play.style.display='block';e.finish.style.display='none';stats();renderMastery();renderHistory();updateBar();next()}
   function toggleTable(t){if(tables.includes(t)){if(tables.length===1)return;tables=tables.filter(x=>x!==t)}else tables=[...tables,t].sort((a,b)=>a-b);init()}
-
-  function pick(){
-    const pool=[];
-    for(const [t,n] of selectedFacts()){
-      const k=factKey(t,n),m=s.mastery[k]||0;if(m>=3)continue;
-      const misses=s.misses[k]||0;let w=4+misses*4+(3-m)*2;
-      if(s.recent.slice(-2).includes(k))w=Math.max(1,Math.floor(w/4));
-      for(let i=0;i<w;i++)pool.push([t,n]);
-    }
-    return pool.length?pool[Math.floor(Math.random()*pool.length)]:[tables[0],0];
-  }
+  function pick(){const pool=[];for(const [t,n] of selectedFacts()){const k=factKey(t,n),m=s.mastery[k]||0;if(m>=3)continue;const misses=s.misses[k]||0;let w=4+misses*4+(3-m)*2;if(s.recent.slice(-2).includes(k))w=Math.max(1,Math.floor(w/4));for(let i=0;i<w;i++)pool.push([t,n]);}return pool.length?pool[Math.floor(Math.random()*pool.length)]:[tables[0],0];}
   function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
   function options(t,n){const c=t*n,v=new Set([c]),cand=[c+t,c-t,c+2*t,c-2*t,c+1,c-1,n*(t+1),Math.max(0,n*(t-1))].filter(x=>x>=0&&x<=144&&x!==c);shuffle(cand);for(const x of cand)if(v.size<4)v.add(x);while(v.size<4)v.add(Math.floor(Math.random()*Math.max(20,12*maxFact+10)));return shuffle([...v])}
-
-  function next(){
-    if(allStrong()||s.round>=maxQuestions()){done();return}
-    s.locked=false;s.current=pick();const [t,n]=s.current,k=factKey(t,n);s.recent.push(k);s.round++;
-    const r=s.round;s.type=(r<=5||r%3===0)?'choice':'type';e.q.textContent=t+' × '+n;
-    const stage=r<=5?'Build the pattern':r<=12?'Practice the fact':'Fast recall';e.mode.textContent=stage+' · '+(s.type==='type'?'TYPE IT':'CHOOSE IT');
-    e.feedback.textContent=s.type==='type'?'Type the answer.':r<=5?'Look at the groups, then choose.':'Choose the answer.';e.explain.textContent='';visual(stage!=='Fast recall');questionUI();updateBar();
-  }
+  function next(){if(allStrong()||s.round>=maxQuestions()){done();return}s.locked=false;s.current=pick();const [t,n]=s.current,k=factKey(t,n);s.recent.push(k);s.round++;const r=s.round;s.type=(r<=5||r%3===0)?'choice':'type';e.q.textContent=t+' × '+n;const stage=r<=5?'Build the pattern':r<=12?'Practice the fact':'Fast recall';e.mode.textContent=stage+' · '+(s.type==='type'?'TYPE IT':'CHOOSE IT');e.feedback.textContent=s.type==='type'?'Type the answer.':r<=5?'Look at the groups, then choose.':'Choose the answer.';e.explain.textContent='';visual(stage!=='Fast recall');questionUI();updateBar();}
   function visual(show){e.visual.innerHTML='';e.visual.style.display=show?'flex':'none';if(!show)return;const [t,n]=s.current;for(let g=0;g<n;g++){const group=document.createElement('div');group.className='group';for(let d=0;d<t;d++){const dot=document.createElement('span');dot.className='dot';group.appendChild(dot)}e.visual.appendChild(group)}}
   function questionUI(){e.answers.innerHTML='';const [t,n]=s.current;if(s.type==='type'){e.answers.style.display='none';e.form.style.display='flex';e.input.value='';setTimeout(()=>e.input.focus(),0)}else{e.form.style.display='none';e.answers.style.display='grid';for(const v of options(t,n)){const b=document.createElement('button');b.type='button';b.className='answer';b.textContent=v;b.addEventListener('click',()=>answer(v,b));e.answers.appendChild(b)}}}
-
-  function answer(v,b){
-    if(s.locked)return;v=Number(v);if(!Number.isFinite(v))return;s.locked=true;const [t,n]=s.current,k=factKey(t,n),c=t*n;
-    if(v===c){if(b)b.classList.add('correct');s.streak++;s.score+=(s.type==='type'?15:10)+Math.min(10,s.streak);s.mastery[k]=Math.min(3,(s.mastery[k]||0)+1);setSaved(t,n,s.mastery[k]);e.feedback.textContent=s.streak>=5?'🔥 '+s.streak+' in a row!':'Yes! '+c+' is right!';e.explain.textContent=t+' × '+n+' = '+c;setTimeout(next,850)}
-    else{if(b)b.classList.add('wrong');s.streak=0;s.misses[k]=(s.misses[k]||0)+1;s.mastery[k]=Math.max(0,(s.mastery[k]||0)-1);setSaved(t,n,s.mastery[k]);if(s.type==='choice'){for(const x of e.answers.querySelectorAll('button'))if(Number(x.textContent)===c)x.classList.add('correct')}e.feedback.textContent='Almost — the answer is '+c+'.';e.explain.textContent=n+' groups of '+t+' = '+c+'. You’ll see this one again.';setTimeout(next,1500)}
-    stats();renderMastery();renderHistory();updateBar();
-  }
+  function answer(v,b){if(s.locked)return;v=Number(v);if(!Number.isFinite(v))return;s.locked=true;const [t,n]=s.current,k=factKey(t,n),c=t*n;if(v===c){if(b)b.classList.add('correct');s.streak++;s.score+=(s.type==='type'?15:10)+Math.min(10,s.streak);s.mastery[k]=Math.min(3,(s.mastery[k]||0)+1);setSaved(t,n,s.mastery[k]);e.feedback.textContent=s.streak>=5?'🔥 '+s.streak+' in a row!':'Yes! '+c+' is right!';e.explain.textContent=t+' × '+n+' = '+c;setTimeout(next,850)}else{if(b)b.classList.add('wrong');s.streak=0;s.misses[k]=(s.misses[k]||0)+1;s.mastery[k]=Math.max(0,(s.mastery[k]||0)-1);setSaved(t,n,s.mastery[k]);if(s.type==='choice'){for(const x of e.answers.querySelectorAll('button'))if(Number(x.textContent)===c)x.classList.add('correct')}e.feedback.textContent='Almost — the answer is '+c+'.';e.explain.textContent=n+' groups of '+t+' = '+c+'. You’ll see this one again.';setTimeout(next,1500)}stats();renderMastery();renderHistory();updateBar();}
   function stats(){e.streak.textContent=s.streak;e.score.textContent=s.score}
   function updateBar(){e.bar.style.width=(knownCount()/Math.max(1,totalFacts())*100)+'%'}
-
-  function renderMastery(){
-    e.facts.innerHTML='';const strong=selectedFacts().filter(([t,n])=>getSaved(t,n)>=3).length;e.masteryTitle.textContent=student().name+' · Saved mastery';e.masterySummary.textContent=strong+' of '+totalFacts()+' selected facts are strong. Strong facts carry forward when you practice a larger group.';
-    for(const [t,n] of selectedFacts()){const m=getSaved(t,n),d=document.createElement('div');d.className='fact'+(m>=3?' known':m>0?' learning':'');d.innerHTML='<span>'+t+'×'+n+'</span><small>'+['new','building 1/3','building 2/3','strong'][m]+'</small>';e.facts.appendChild(d)}
-  }
+  function renderMastery(){e.facts.innerHTML='';const strong=selectedFacts().filter(([t,n])=>getSaved(t,n)>=3).length;e.masteryTitle.textContent=student().name+' · Saved mastery';e.masterySummary.textContent=strong+' of '+totalFacts()+' selected facts are strong. Strong facts carry forward when you practice a larger group.';for(const [t,n] of selectedFacts()){const m=getSaved(t,n),d=document.createElement('div');d.className='fact'+(m>=3?' known':m>0?' learning':'');d.innerHTML='<span>'+t+'×'+n+'</span><small>'+['new','building 1/3','building 2/3','strong'][m]+'</small>';e.facts.appendChild(d)}}
   function overallStrongCount(){let c=0;for(let t=1;t<=12;t++)for(let n=0;n<=12;n++)if(getSaved(t,n)>=3)c++;return c}
-  function renderHistory(){
-    e.overallSummary.textContent=student().name+' has '+overallStrongCount()+' strong facts across the full 1–12 × 0–12 grid. Progress is saved on this device.';e.historyList.innerHTML='';const h=student().history||[];if(!h.length){e.historyList.innerHTML='<div class="empty">No completed sessions yet.</div>';return}
-    for(const item of h.slice(-8).reverse()){const d=document.createElement('div');d.className='history-item';const date=new Date(item.at);d.innerHTML='<div><div class="history-main">'+escapeHtml(item.tablesLabel)+' · through ×'+item.maxFact+'</div><div class="history-sub">'+date.toLocaleDateString()+' · '+item.strong+' of '+item.total+' strong · '+item.questions+' questions</div></div><div class="pill">⭐ '+item.score+'</div>';e.historyList.appendChild(d)}
-  }
+  function renderHistory(){e.overallSummary.textContent=student().name+' has '+overallStrongCount()+' strong facts across the full 1–12 × 0–12 grid. Progress is saved on this device.';e.historyList.innerHTML='';const h=student().history||[];if(!h.length){e.historyList.innerHTML='<div class="empty">No completed sessions yet.</div>';return}for(const item of h.slice(-8).reverse()){const d=document.createElement('div');d.className='history-item';const date=new Date(item.at);d.innerHTML='<div><div class="history-main">'+escapeHtml(item.tablesLabel)+' · through ×'+item.maxFact+'</div><div class="history-sub">'+date.toLocaleDateString()+' · '+item.strong+' of '+item.total+' strong · '+item.questions+' questions</div></div><div class="pill">⭐ '+item.score+'</div>';e.historyList.appendChild(d)}}
   function escapeHtml(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
   function hint(){if(s.locked)return;const [t,n]=s.current;if(n===0){e.feedback.textContent='Zero groups means zero.';e.explain.textContent=t+' × 0 = 0';return}const p=(n-1)*t;e.feedback.textContent='Think: '+t+' × '+(n-1)+' = '+p+', then add '+t+'.';e.explain.textContent=p+' + '+t+' = ?';visual(true)}
-  function done(){
-    const known=knownCount();updateBar();e.play.style.display='none';e.finish.style.display='block';const all=known===totalFacts();e.finishText.textContent=all?'You scored '+s.score+' points and made all '+totalFacts()+' selected facts strong in '+s.round+' questions!':'You scored '+s.score+' points and finished with '+known+' of '+totalFacts()+' selected facts strong in '+s.round+' questions.';
-    student().history=student().history||[];student().history.push({at:new Date().toISOString(),tables:[...tables],tablesLabel:tables.map(t=>'×'+t).join(', '),maxFact,strong:known,total:totalFacts(),questions:s.round,score:s.score});if(student().history.length>100)student().history=student().history.slice(-100);save();renderHistory();renderMastery();
-  }
-
+  function done(){const known=knownCount();updateBar();e.play.style.display='none';e.finish.style.display='block';const all=known===totalFacts();e.finishText.textContent=all?'You scored '+s.score+' points and made all '+totalFacts()+' selected facts strong in '+s.round+' questions!':'You scored '+s.score+' points and finished with '+known+' of '+totalFacts()+' selected facts strong after '+s.round+' questions. Your progress is saved for next time.';student().history=student().history||[];student().history.push({at:new Date().toISOString(),tables:[...tables],tablesLabel:tables.map(t=>'×'+t).join(', '),maxFact,strong:known,total:totalFacts(),questions:s.round,score:s.score});if(student().history.length>100)student().history=student().history.slice(-100);save();renderHistory();renderMastery();}
   e.form.addEventListener('submit',ev=>{ev.preventDefault();if(s.locked)return;const raw=e.input.value.trim();if(raw===''){e.feedback.textContent='Type an answer first.';return}const v=Number(raw);if(!Number.isFinite(v)||v<0||v>144){e.feedback.textContent='Enter a number from 0 to 144.';return}answer(v,null)});
   e.student.addEventListener('change',()=>{studentId=e.student.value;save();init()});
   e.addStudent.addEventListener('click',()=>{const name=prompt('Student name:');if(!name||!name.trim())return;const x=blankStudent(name.trim().slice(0,30));data.students.push(x);studentId=x.id;save();renderStudents();init()});
