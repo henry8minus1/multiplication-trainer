@@ -6,7 +6,7 @@
 
 const ALLOWED_ORIGIN = 'https://henry8minus1.github.io';
 const DEFAULT_PROVIDER = 'gemini';
-const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+const DEFAULT_GEMINI_MODEL = 'gemini-3.6-flash';
 const DEFAULT_OPENAI_MODEL = 'gpt-5.4-mini';
 
 function cors(origin) {
@@ -87,7 +87,7 @@ async function generateWithGemini(env, instructions) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`;
   const response = await fetch(endpoint, {
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({system_instruction:{parts:[{text:instructions}]},contents:[{role:'user',parts:[{text:'Create the next problem.'}]}],generationConfig:{temperature:0.9,maxOutputTokens:350,responseMimeType:'application/json',responseSchema:geminiSchema}}),
+    body:JSON.stringify({system_instruction:{parts:[{text:instructions}]},contents:[{role:'user',parts:[{text:'Create the next problem.'}]}],generationConfig:{maxOutputTokens:350,responseMimeType:'application/json',responseSchema:geminiSchema}}),
   });
   if (!response.ok) { const detail=await response.text(); console.error('Gemini error',response.status,detail.slice(0,500)); throw new Error('Gemini generation failed'); }
   const payload=await response.json();
