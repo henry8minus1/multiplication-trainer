@@ -2,13 +2,14 @@
 
 The GitHub Pages app works **without any AI account or backend**. `word-problems.html` has a built-in adaptive problem generator and will automatically fall back to it whenever the AI backend is unavailable.
 
-The optional backend exists only to make word problems more varied and adaptive. It should always run server-side so API keys never appear in the public GitHub Pages JavaScript.
+The optional backend exists only to make word problems more varied and adaptive. It should always run server-side so provider API keys never appear in the public GitHub Pages JavaScript.
 
 ## Recommended architecture
 
 ```text
-GitHub Pages app
+Authorized family browser
       |
+      | Worker URL + family access token
       | POST /word-problem
       v
 Cloudflare Worker
@@ -17,7 +18,7 @@ Cloudflare Worker
       +--> OpenAI API
 ```
 
-The browser should know only the Worker URL. **Never put `GEMINI_API_KEY`, `OPENAI_API_KEY`, or any provider key in this repository, `word-problems.js`, browser localStorage, or the Parent / AI settings field.**
+The public website does **not** contain the Worker URL or the family token. Each browser/device you authorize stores those values locally. Visitors without both values automatically use the built-in generator and cannot consume your AI quota.
 
 The frontend sends only an anonymous learning profile: grade, requested math skill, adaptive difficulty, and recent accuracy by skill. It does not send the student's name, school, location, handwriting, or full local history.
 
@@ -25,7 +26,7 @@ The frontend sends only an anonymous learning profile: grade, requested math ski
 
 # Recommended option — Gemini free tier
 
-The included `cloudflare-worker.js` now supports Gemini directly and defaults to Gemini when `AI_PROVIDER` is omitted.
+The included `cloudflare-worker.js` defaults to Gemini when `AI_PROVIDER` is omitted.
 
 ## 1. Create a Gemini API key
 
@@ -46,23 +47,33 @@ Do not paste this key into GitHub Pages or the repository.
 5. Replace the starter code with the full contents of `backend/cloudflare-worker.js`.
 6. Deploy the Worker.
 
-## 3. Add the Gemini secret
+## 3. Add Cloudflare secrets and variables
 
-In the Worker dashboard open **Settings → Variables and Secrets** and add:
+In the Worker dashboard open **Settings → Variables and Secrets**.
+
+Add this as a **Secret**:
 
 ```text
 GEMINI_API_KEY
 ```
 
-Set it as a **Secret**, not a normal plain-text variable, and paste the Gemini API key as the value.
+Paste the Gemini API key as its value.
 
-Then add a normal text variable:
+Then create a second **Secret**:
+
+```text
+MATH_APP_ACCESS_TOKEN
+```
+
+Choose a long random value that you will enter once on each family browser. For example, generate 24–32 random characters with a password manager. Do not use a child's name or an easy household password.
+
+The Worker rejects requests that do not include this exact token in the `X-Math-App-Token` request header. This means simply discovering the Worker URL is not enough to consume your Gemini quota.
+
+Add this normal text variable:
 
 ```text
 AI_PROVIDER = gemini
 ```
-
-This variable is not sensitive.
 
 Optional model override:
 
@@ -70,9 +81,9 @@ Optional model override:
 GEMINI_MODEL = gemini-2.5-flash
 ```
 
-If `GEMINI_MODEL` is omitted, the Worker currently defaults to `gemini-2.5-flash`.
+If `GEMINI_MODEL` is omitted, the Worker defaults to `gemini-2.5-flash`.
 
-## 4. Connect the website
+## 4. Authorize each family browser
 
 After deployment Cloudflare will give you a URL similar to:
 
@@ -80,21 +91,32 @@ After deployment Cloudflare will give you a URL similar to:
 https://math-word-problems.<your-subdomain>.workers.dev
 ```
 
-On the website open:
+On each device/browser you want to authorize, open:
 
 **Word Problems → Parent / AI settings**
 
-Paste only the Worker base URL. The frontend calls:
+Enter both:
 
 ```text
-POST <base-url>/word-problem
+AI backend URL: https://math-word-problems.<your-subdomain>.workers.dev
+Family access token: <the exact MATH_APP_ACCESS_TOKEN value>
 ```
+
+Choose **Save access**.
+
+Those two values are stored only in that browser's local storage. They are not added to the repository and are not part of the site's general student-progress backup. A different browser/device will continue using the built-in problem generator until you authorize it separately.
+
+### Security note about the family token
+
+The family token is an access-control secret, but it is intentionally stored in browser local storage for convenience. Someone with access to that browser's developer tools or device storage could retrieve it. It is therefore much safer than exposing your Gemini key or making the Worker unrestricted, but it should not be treated like a high-security account credential.
+
+If a device is lost or you think the token has leaked, replace `MATH_APP_ACCESS_TOKEN` in Cloudflare and enter the new token only on devices you still trust.
 
 ## Gemini free tier
 
-As of August 2026, Google documents a free tier for `gemini-2.5-flash` with free input and output tokens subject to rate limits. For family-scale word-problem generation this is likely enough to run at no API cost.
+Google offers a free Gemini Developer API tier for selected models subject to rate limits. For family-scale word-problem generation this may be enough to run at no API cost. Check Google's current pricing and rate-limit pages before relying on a particular quota.
 
-Important privacy tradeoff: Google's documentation says free-tier content may be used to improve Google products, while paid-tier usage has different data-use terms. This project minimizes that exposure by sending only anonymous grade/skill/performance data and never sending the student's name or other identifying information.
+Because free-tier provider terms can differ from paid-tier terms, keep payloads anonymous. This project deliberately sends grade/skill/performance information but not child names or other identifying details.
 
 ---
 
@@ -108,7 +130,13 @@ Add an encrypted Worker secret:
 OPENAI_API_KEY
 ```
 
-Then set the normal variable:
+Keep the same required family token secret:
+
+```text
+MATH_APP_ACCESS_TOKEN
+```
+
+Then set:
 
 ```text
 AI_PROVIDER = openai
@@ -120,15 +148,13 @@ Optional model override:
 OPENAI_MODEL = gpt-5.4-mini
 ```
 
-If `OPENAI_MODEL` is omitted, the Worker defaults to `gpt-5.4-mini`.
-
-A ChatGPT Plus/Pro subscription is separate from API billing; a ChatGPT subscription does not automatically provide API usage credits.
+A ChatGPT subscription is separate from API billing.
 
 ---
 
 # Provider switching
 
-The public website always calls the same Worker endpoint. The Worker decides which provider to use based on:
+The public website always calls the same Worker endpoint. The Worker chooses the provider from:
 
 ```text
 AI_PROVIDER
@@ -141,26 +167,26 @@ gemini
 openai
 ```
 
-So switching providers is only a Cloudflare setting change; no GitHub Pages code needs to be changed.
+Changing providers does not require changing the website or re-authorizing browsers as long as the Worker URL and `MATH_APP_ACCESS_TOKEN` stay the same.
 
 ---
 
 # Free fallback
 
-Even if Gemini reaches a quota limit, the Worker is down, or no AI backend is configured, `word-problems.html` still uses the built-in adaptive generator. That means the page is never dependent on a paid service or an internet connection.
+If Gemini reaches quota, the Worker is unavailable, a device is not authorized, or no AI backend is configured, `word-problems.html` uses the built-in adaptive generator. The learning tool therefore remains usable without an AI service or internet connection.
 
 ---
 
 # Safety, privacy, and cost controls
 
-Because this endpoint is reachable from a public website:
+The Worker currently has several layers of protection:
 
-- Restrict CORS to the GitHub Pages origin.
-- Keep all provider API keys in Cloudflare Secrets.
-- Add Cloudflare rate limiting or another request cap before broad public use.
-- Keep prompts and output-token limits small.
-- Do not forward student names or other identifying information.
-- Log errors, but do not log student data.
-- Keep the local generator as the fallback whenever the backend errors or reaches quota.
+- CORS is restricted to the GitHub Pages origin.
+- Every generation request must provide `MATH_APP_ACCESS_TOKEN`.
+- Provider API keys stay in Cloudflare Secrets.
+- No student names are sent to the backend.
+- The browser falls back locally when authorization or generation fails.
 
-For this app, generating a small batch of problems ahead of time and caching them locally is preferable to calling the model on every screen transition. It lowers latency and API usage and makes temporary outages invisible to the student.
+For stronger protection, also consider a Cloudflare rate-limit rule for `/word-problem`, provider-side quota/budget alerts, and periodically rotating the family token.
+
+Do not rely on CORS alone as an authorization mechanism. CORS controls browser behavior; the family token is what prevents an unauthenticated caller from using the Worker directly.
