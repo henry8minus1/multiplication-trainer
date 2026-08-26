@@ -52,8 +52,7 @@ const openAISchema = {
   required: ['problem','answer','hint','explanation','skill','difficulty'],
 };
 
-// Gemini's responseSchema supports a JSON-Schema-like subset. Do not send
-// additionalProperties, which Gemini rejects as an unknown field.
+// Gemini's legacy generateContent responseSchema supports a JSON-Schema-like subset.
 const geminiSchema = {
   type: 'object',
   properties: {
@@ -87,13 +86,28 @@ async function generateWithGemini(env, instructions) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`;
   const response = await fetch(endpoint, {
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({system_instruction:{parts:[{text:instructions}]},contents:[{role:'user',parts:[{text:'Create the next problem.'}]}],generationConfig:{maxOutputTokens:350,responseMimeType:'application/json',responseSchema:geminiSchema}}),
+    body:JSON.stringify({
+      system_instruction:{parts:[{text:instructions}]},
+      contents:[{role:'user',parts:[{text:'Create the next problem.'}]}],
+      generationConfig:{
+        maxOutputTokens:1200,
+        thinkingConfig:{thinkingLevel:'low'},
+        responseMimeType:'application/json',
+        responseSchema:geminiSchema
+      }
+    }),
   });
   if (!response.ok) { const detail=await response.text(); console.error('Gemini error',response.status,detail.slice(0,500)); throw new Error('Gemini generation failed'); }
   const payload=await response.json();
-  const text=payload?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('').trim();
+  const candidate=payload?.candidates?.[0];
+  const text=candidate?.content?.parts?.map(p=>p.text||'').join('').trim();
   if(!text) throw new Error('Gemini returned no text');
-  return JSON.parse(text);
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    console.error('Gemini invalid JSON', 'finishReason='+String(candidate?.finishReason||'unknown'), 'chars='+text.length, text.slice(0,180));
+    throw err;
+  }
 }
 
 async function generateWithOpenAI(env, instructions) {
