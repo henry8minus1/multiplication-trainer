@@ -13,7 +13,7 @@ function cors(origin) {
   const allowed = origin === ALLOWED_ORIGIN ? origin : ALLOWED_ORIGIN;
   return {
     'Access-Control-Allow-Origin': allowed,
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, X-Math-App-Token',
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin',
@@ -96,6 +96,21 @@ export default {
     const origin=request.headers.get('Origin')||ALLOWED_ORIGIN;
     if(request.method==='OPTIONS')return new Response(null,{status:204,headers:cors(origin)});
     const url=new URL(request.url);
+
+    // Safe deployment diagnostic: reports only whether expected bindings exist.
+    // It never returns secret values and does not call an AI provider.
+    if(request.method==='GET'&&url.pathname==='/health') {
+      const provider=String(env.AI_PROVIDER||DEFAULT_PROVIDER).toLowerCase();
+      return json({
+        ok:true,
+        provider,
+        accessTokenConfigured:Boolean(env.MATH_APP_ACCESS_TOKEN),
+        geminiKeyConfigured:Boolean(env.GEMINI_API_KEY),
+        openAIKeyConfigured:Boolean(env.OPENAI_API_KEY),
+        geminiModel:env.GEMINI_MODEL||DEFAULT_GEMINI_MODEL,
+      },200,origin);
+    }
+
     if(request.method!=='POST'||url.pathname!=='/word-problem')return json({error:'not_found'},404,origin);
     if(origin!==ALLOWED_ORIGIN)return json({error:'origin_not_allowed'},403,origin);
     if(!env.MATH_APP_ACCESS_TOKEN)return json({error:'access_control_not_configured'},503,origin);
