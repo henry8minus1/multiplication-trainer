@@ -160,7 +160,22 @@ button,select,input{font:inherit}
   };
 
   let table = 3, maxFact = 5, s;
-  const rounds = 20;
+
+  function totalFacts() {
+    return maxFact + 1;
+  }
+
+  function maxQuestions() {
+    return totalFacts() * 5;
+  }
+
+  function knownCount() {
+    return s.mastery.slice(0, maxFact + 1).filter(x => x >= 3).length;
+  }
+
+  function allStrong() {
+    return knownCount() === totalFacts();
+  }
 
   function fresh() {
     return {
@@ -172,7 +187,7 @@ button,select,input{font:inherit}
   function labels() {
     e.brand.textContent = 'Master the ×' + table + 's';
     e.masteryTitle.textContent = '×' + table + ' Fact Power · 0–' + maxFact;
-    e.rangeNote.textContent = 'Questions from ' + table + '×0 through ' + table + '×' + maxFact;
+    e.rangeNote.textContent = 'Questions from ' + table + '×0 through ' + table + '×' + maxFact + ' · practice ends when all are strong (up to ' + maxQuestions() + ' questions)';
   }
 
   function init() {
@@ -188,11 +203,12 @@ button,select,input{font:inherit}
   function pick() {
     const pool = [];
     for (let n = 0; n <= maxFact; n++) {
-      let w = 3 + s.misses[n] * 4 - Math.min(2, s.mastery[n]);
-      if (s.recent.slice(-2).includes(n)) w = 1;
+      if (s.mastery[n] >= 3) continue;
+      let w = 4 + s.misses[n] * 4 + (3 - s.mastery[n]) * 2;
+      if (s.recent.slice(-2).includes(n)) w = Math.max(1, Math.floor(w / 4));
       for (let k = 0; k < Math.max(1, w); k++) pool.push(n);
     }
-    return pool[Math.floor(Math.random() * pool.length)];
+    return pool.length ? pool[Math.floor(Math.random() * pool.length)] : 0;
   }
 
   function shuffle(a) {
@@ -218,7 +234,7 @@ button,select,input{font:inherit}
   }
 
   function next() {
-    if (s.round >= rounds) {
+    if (allStrong() || s.round >= maxQuestions()) {
       done();
       return;
     }
@@ -229,7 +245,7 @@ button,select,input{font:inherit}
 
     const r = s.round;
     s.type = (r <= 5 || r % 3 === 0) ? 'choice' : 'type';
-    e.bar.style.width = ((r - 1) / rounds * 100) + '%';
+    e.bar.style.width = (knownCount() / totalFacts() * 100) + '%';
     e.q.textContent = table + ' × ' + s.current;
 
     const stage = r <= 5 ? 'Build the pattern' : r <= 12 ? 'Practice the fact' : 'Fast recall';
@@ -316,6 +332,7 @@ button,select,input{font:inherit}
 
     stats();
     facts();
+    e.bar.style.width = (knownCount() / totalFacts() * 100) + '%';
   }
 
   function stats() {
@@ -351,11 +368,16 @@ button,select,input{font:inherit}
   }
 
   function done() {
-    e.bar.style.width = '100%';
+    const known = knownCount();
+    e.bar.style.width = (known / totalFacts() * 100) + '%';
     e.play.style.display = 'none';
     e.finish.style.display = 'block';
-    const known = s.mastery.slice(0, maxFact + 1).filter(x => x >= 3).length;
-    e.finishText.textContent = 'You scored ' + s.score + ' points and made ' + known + ' of ' + (maxFact + 1) + ' facts strong.';
+
+    if (known === totalFacts()) {
+      e.finishText.textContent = 'You scored ' + s.score + ' points and made all ' + totalFacts() + ' facts strong in ' + s.round + ' questions!';
+    } else {
+      e.finishText.textContent = 'You scored ' + s.score + ' points and made ' + known + ' of ' + totalFacts() + ' facts strong in ' + s.round + ' questions. Practice again to keep building the remaining facts.';
+    }
   }
 
   e.form.addEventListener('submit', ev => {
