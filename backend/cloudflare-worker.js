@@ -8,7 +8,7 @@
 
 const ALLOWED_ORIGIN = 'https://henry8minus1.github.io';
 const DEFAULT_PROVIDER = 'anthropic';
-const DEFAULT_ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
+const DEFAULT_ANTHROPIC_MODEL = 'claude-haiku-4-5';
 const DEFAULT_GEMINI_MODEL = 'gemini-3.6-flash';
 const DEFAULT_OPENAI_MODEL = 'gpt-5.4-mini';
 
