@@ -43,8 +43,27 @@
   async function enable(on){const cfg=settings();setSettings({...cfg,enabled:!!on});if(on){const raw=localStorage.getItem(KEY);if(raw)await backupRaw(raw)}}
   async function saveNow(){const raw=localStorage.getItem(KEY);if(raw)await backupRaw(raw)}
   async function restoreEmergency(){const v=await idbGet('latest');if(!v||!v.raw)return null;try{return JSON.parse(v.raw)}catch(_){return null}}
-  async function status(){const cfg=settings(),h=await idbGet(HANDLE);return {enabled:!!cfg.enabled,configured:!!h,supported:'showSaveFilePicker' in window,lastSaved:cfg.lastSaved||null,needsPermission:!!cfg.needsPermission}}
-  window.MathAutoSave={configure,enable,saveNow,restoreEmergency,status};
+
+  async function backupToFiles(){
+    const raw=localStorage.getItem(KEY);if(!raw)return {ok:false,reason:'no-data'};
+    const text=payload(raw),name='math-mastery-backup-'+new Date().toISOString().slice(0,10)+'.json';
+    const file=new File([text],name,{type:'application/json'});
+    try{
+      if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+        await navigator.share({title:'Math Mastery backup',text:'Save this backup in Files or iCloud Drive.',files:[file]});
+        setSettings({...settings(),lastManualFileBackup:new Date().toISOString()});
+        return {ok:true,method:'share'};
+      }
+    }catch(e){if(e&&e.name==='AbortError')return {ok:false,reason:'cancelled'}}
+    try{
+      const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+      setSettings({...settings(),lastManualFileBackup:new Date().toISOString()});
+      return {ok:true,method:'download'};
+    }catch(_){return {ok:false,reason:'unsupported'}}
+  }
+
+  async function status(){const cfg=settings(),h=await idbGet(HANDLE);return {enabled:!!cfg.enabled,configured:!!h,supported:'showSaveFilePicker' in window,shareSupported:!!(navigator.share&&navigator.canShare),lastSaved:cfg.lastSaved||null,lastManualFileBackup:cfg.lastManualFileBackup||null,needsPermission:!!cfg.needsPermission}}
+  window.MathAutoSave={configure,enable,saveNow,restoreEmergency,backupToFiles,status};
   const raw=localStorage.getItem(KEY);if(raw)schedule(raw);
   if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
 })();
