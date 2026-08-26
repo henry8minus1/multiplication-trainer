@@ -9,6 +9,7 @@
   const undo=document.getElementById('work-undo');
   const known=document.getElementById('known-note');
   const unknown=document.getElementById('unknown-note');
+  const problem=document.getElementById('problem');
   let strokes=[],current=null,background='blank';
 
   function size(){
@@ -36,6 +37,7 @@
     }
   }
   function redraw(){drawTemplate();ctx.strokeStyle='#171717';ctx.lineWidth=Math.max(5,canvas.width*.008);ctx.lineCap='round';ctx.lineJoin='round';for(const st of strokes){if(st.length<1)continue;ctx.beginPath();ctx.moveTo(st[0].x*canvas.width,st[0].y*canvas.height);for(let i=1;i<st.length;i++)ctx.lineTo(st[i].x*canvas.width,st[i].y*canvas.height);ctx.stroke()}}
+  function reset(){strokes=[];background='blank';toolButtons.forEach(x=>x.classList.remove('on'));if(known)known.value='';if(unknown)unknown.value='';redraw()}
   canvas.addEventListener('pointerdown',ev=>{ev.preventDefault();canvas.setPointerCapture(ev.pointerId);current=[pt(ev)];strokes.push(current);redraw()});
   canvas.addEventListener('pointermove',ev=>{if(!current)return;current.push(pt(ev));redraw()});
   const end=()=>{current=null};canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
@@ -43,6 +45,7 @@
   toolButtons.forEach(b=>b.addEventListener('click',()=>{background=b.dataset.mathTool;toolButtons.forEach(x=>x.classList.toggle('on',x===b));redraw()}));
   clear.addEventListener('click',()=>{strokes=[];redraw()});undo.addEventListener('click',()=>{strokes.pop();redraw()});
   window.addEventListener('resize',()=>{if(wrap.style.display!=='none')size()});
-  window.MathWordTools={reset(){strokes=[];background='blank';toolButtons.forEach(x=>x.classList.remove('on'));if(known)known.value='';if(unknown)unknown.value='';redraw()}};
+  if(problem){let last='';new MutationObserver(()=>{const now=problem.textContent;if(now&&now!=='Loading…'&&now!==last){last=now;reset()}}).observe(problem,{childList:true,subtree:true,characterData:true})}
+  window.MathWordTools={reset};
   size();
 })();
