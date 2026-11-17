@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Module Assessment · Math Mastery</title>
+<link rel="stylesheet" href="trainer.css">
+<style>
+.as-shell{max-width:900px;margin:0 auto}
+.as-hero{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;margin:8px 0 18px}
+.as-hero h1{font-size:clamp(34px,8vw,54px);letter-spacing:-.05em;margin:4px 0 8px}
+.as-hero p{margin:0;color:var(--muted);max-width:640px;line-height:1.45}
+.home-link{text-decoration:none}
+.as-setup{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+.as-box{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:13px 15px}
+.as-box label,.as-box .box-label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.07em;font-weight:900;color:var(--muted);margin-bottom:7px}
+.as-box select{width:100%;min-height:46px;border:1px solid var(--border);border-radius:12px;background:var(--bg);color:var(--fg);padding:0 10px;font-weight:850}
+.as-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{min-height:46px;padding:9px 15px;border-radius:14px;border:1px solid var(--border);background:var(--panel);color:var(--fg);font-weight:850;cursor:pointer}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sheet{background:#fff;color:#1d1f1c;border:1px solid var(--border);border-radius:22px;padding:clamp(18px,4vw,40px);margin:14px 0}
+.sheet-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-end;border-bottom:2px solid #1d1f1c;padding-bottom:10px;margin-bottom:8px}
+.sheet-head h2{margin:0;font-size:30px;letter-spacing:-.03em;line-height:1}
+.sheet-head .meta{font-size:13px;color:#555;text-align:right}
+.name-line{display:inline-block;min-width:220px;border-bottom:1px solid #1d1f1c;margin-left:6px}
+.item{padding:22px 0;border-bottom:1px dashed #c9c6bc;break-inside:avoid}
+.item:last-child{border-bottom:0}
+.item-q{font-size:19px;line-height:1.45;display:flex;gap:10px}
+.item-q .num{font-weight:950;min-width:26px}
+.part{margin:14px 0 0 36px}
+.part-label{font-weight:900;margin-bottom:4px}
+.part-text{margin-bottom:8px;line-height:1.4}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:20px;margin:6px 0}
+.blank{width:74px;min-height:44px;border:0;border-bottom:2px solid #1d1f1c;background:#f6f3ea;border-radius:8px 8px 0 0;text-align:center;font-size:21px;font-weight:850;color:#1d1f1c}
+.blank.wide{width:230px;text-align:left;padding:0 10px}
+.blank.mark-ok,.match-sel.mark-ok{background:#dcebd9;border-color:#2f6b37}
+.blank.mark-bad,.match-sel.mark-bad{background:#f3deda;border-color:#a23c33}
+.match{display:grid;grid-template-columns:auto auto;gap:10px 18px;align-items:center;justify-content:start;margin-left:36px;margin-top:10px;font-size:21px}
+.match-sel{min-height:44px;min-width:92px;border:2px solid #b9b5aa;border-radius:10px;background:#f6f3ea;color:#1d1f1c;font-size:20px;font-weight:850;padding:0 8px}
+.yn{display:grid;grid-template-columns:minmax(150px,auto) 84px 84px;justify-content:start;gap:10px 14px;align-items:center;margin:10px 0 0 36px;font-size:21px}
+.yn button{min-height:42px;min-width:64px;border-radius:999px;border:2px solid #b9b5aa;background:#fff;color:#1d1f1c;font-weight:850;cursor:pointer}
+.yn button.on{border-color:#1d1f1c;background:#efe5bd}
+.yn button.mark-ok{background:#dcebd9;border-color:#2f6b37}
+.yn button.mark-bad{background:#f3deda;border-color:#a23c33}
+.choices{display:grid;gap:8px;margin-top:6px}
+.choice{display:flex;gap:10px;align-items:flex-start;border:2px solid #d8d4ca;border-radius:12px;padding:10px 12px;cursor:pointer;line-height:1.4;font-size:17px}
+.choice input{margin-top:4px;transform:scale(1.3)}
+.choice.mark-ok{background:#dcebd9;border-color:#2f6b37}
+.choice.mark-bad{background:#f3deda;border-color:#a23c33}
+.groups{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 4px 36px}
+.group{border:2px solid #8a867c;border-radius:14px 14px 22px 22px;padding:8px;min-width:64px;max-width:96px;display:flex;flex-wrap:wrap;justify-content:center;gap:2px;font-size:20px;line-height:1.1;background:#faf8f2}
+.stack{display:flex;flex-direction:column;gap:2px;padding:4px}
+.stack span{display:block;width:62px;height:11px;border:1.5px solid #555;border-radius:2px;background:repeating-linear-gradient(90deg,#c9c6bc 0 6px,#e9e6dc 6px 12px)}
+.table-wrap{overflow-x:auto;margin:12px 0 0 36px}
+table.mt{border-collapse:collapse;font-size:15px}
+table.mt td,table.mt th{border:1.5px solid #1d1f1c;width:36px;height:30px;text-align:center}
+table.mt th{background:#e6e3d9;font-weight:950}
+.draw{margin:10px 0 0 36px;border:1px dashed #b9b5aa;border-radius:12px;height:140px;color:#999;font-size:13px;padding:8px}
+.feedback-box{display:none;margin:12px 0 0 36px;padding:10px 14px;border-radius:12px;background:#efe5bd;color:#574811;font-size:16px;line-height:1.45}
+.feedback-box.ok{background:#dcebd9;color:#204827}
+.checked .feedback-box{display:block}
+.score-card{display:none;text-align:center;background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:22px;margin:14px 0}
+.score-card .big{font-size:56px;font-weight:950;letter-spacing:-.04em}
+.score-card p{color:var(--muted);margin:6px 0 0}
+.keypad{position:fixed;left:0;right:0;bottom:calc(10px + env(safe-area-inset-bottom));display:none;z-index:5;gap:8px;justify-content:center;margin:10px 0}
+.keypad.show{display:flex}
+.keypad button{min-width:58px;min-height:48px;border-radius:14px;border:1px solid var(--border);background:var(--panel);color:var(--fg);font-size:24px;font-weight:950;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.history{margin-top:22px}
+.history-row{display:flex;justify-content:space-between;gap:10px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:6px;font-size:15px}
+.history-row span{color:var(--muted)}
+.key-sheet{display:none}
+.key-sheet.show{display:block}
+.key-sheet ol{line-height:1.7;font-size:16px;padding-left:22px}
+.note-small{font-size:13px;color:var(--muted);margin-top:6px}
+@media(max-width:700px){.as-setup{grid-template-columns:1fr}.part,.match,.yn,.groups,.table-wrap,.draw,.feedback-box{margin-left:0}.yn{grid-template-columns:1fr 70px 70px}}
+@media print{
+  body{background:#fff}
+  .no-print,.as-hero,.as-setup,.keypad,.score-card,.history,.feedback-box{display:none!important}
+  .app{padding:0;max-width:none}
+  .sheet{border:0;border-radius:0;padding:0;margin:0}
+  .blank{background:transparent;border-radius:0}
+  .match-sel{appearance:none;-webkit-appearance:none;background:transparent;border:0;border-bottom:2px solid #000;border-radius:0;color:transparent}
+  .yn button{background:#fff!important}
+  .item{border-bottom:0}
+  .key-sheet.show{break-before:page}
+  .mark-ok,.mark-bad{background:transparent!important;border-color:#b9b5aa!important}
+  .blank.mark-ok,.blank.mark-bad{border-color:#000!important}
+}
+</style>
+</head>
+<body>
+<div class="app as-shell">
+  <div class="as-hero"><div><div class="sub">PRACTICE TEST</div><h1>Module Assessment</h1><p>Practice tests in the same formats as the Grade 3 Module 3 assessment (multiplication and division with units of 6, 7, 8, 9 and multiples of 10). The numbers and stories change every time. Answer on screen and check, or print it for paper practice.</p></div><a class="pill home-link" href="index.html">⌂ Home</a></div>
+
+  <div class="as-setup">
+    <div class="as-box"><label for="student">Student</label><select id="student"></select></div>
+    <div class="as-box"><label for="module">Module</label><select id="module"><option value="g3m3">Grade 3 · Module 3</option></select></div>
+    <div class="as-box"><div class="box-label">Test</div><div class="as-actions"><button class="btn primary" id="new-test" type="button">New test</button><button class="btn" id="print" type="button">🖨 Print</button></div><label style="margin-top:8px;display:flex;gap:6px;align-items:center;text-transform:none;letter-spacing:0;font-size:14px;color:var(--muted)"><input type="checkbox" id="with-key"> Print the answer key too</label></div>
+  </div>
+
+  <div class="score-card" id="score-card"><div class="big" id="score-big"></div><p id="score-text"></p><div class="as-actions" style="justify-content:center;margin-top:12px"><button class="btn" id="retry" type="button">Try this test again</button><button class="btn primary" id="new-test-2" type="button">New test</button></div></div>
+
+  <div class="sheet" id="sheet">
+    <div class="sheet-head"><h2>Module Assessment</h2><div class="meta"><div>Name<span class="name-line" id="name-line"></span></div><div id="test-id"></div></div></div>
+    <div id="items"></div>
+    <div class="as-actions no-print" style="justify-content:center;margin-top:18px"><button class="btn primary" id="check" type="button" style="min-width:220px;font-size:19px">Check my answers</button></div>
+  </div>
+
+  <div class="sheet key-sheet" id="key-sheet"><div class="sheet-head"><h2>Answer key</h2><div class="meta" id="key-id"></div></div><ol id="key-list"></ol></div>
+
+  <div class="keypad no-print" id="keypad" aria-label="Math symbols"><button type="button" data-sym="×">×</button><button type="button" data-sym="÷">÷</button><button type="button" data-sym="=">=</button><button type="button" data-sym="+">+</button></div>
+
+  <section class="history no-print"><div class="section-title">Past practice tests</div><div class="summary">Saved for this student on this device.</div><div id="history"></div></section>
+</div>
+<script src="autosave.js"></script>
+<script src="assessment.js"></script>
+</body>
+</html>
